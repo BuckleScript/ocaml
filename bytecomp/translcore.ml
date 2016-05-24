@@ -148,6 +148,8 @@ let comparisons_table = create_hashtable 11 [
 
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
+  "%bytes_to_string", Pbytes_to_string;
+  "%bytes_of_string", Pbytes_of_string;
   "%ignore", Pignore;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
@@ -209,6 +211,11 @@ let primitives_table = create_hashtable 57 [
   "%string_safe_set", Pstringsets;
   "%string_unsafe_get", Pstringrefu;
   "%string_unsafe_set", Pstringsetu;
+  "%bytes_length", Pbyteslength;
+  "%bytes_safe_get", Pbytesrefs;
+  "%bytes_safe_set", Pbytessets;
+  "%bytes_unsafe_get", Pbytesrefu;
+  "%bytes_unsafe_set", Pbytessetu;
   "%array_length", Parraylength Pgenarray;
   "%array_safe_get", Parrayrefs Pgenarray;
   "%array_safe_set", Parraysets Pgenarray;

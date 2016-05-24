@@ -43,7 +43,9 @@ type initialization_or_assignment =
   | Assignment
 
 type primitive =
-    Pidentity
+  | Pidentity
+  | Pbytes_to_string
+  | Pbytes_of_string
   | Pignore
   | Prevapply of Location.t
   | Pdirapply of Location.t
@@ -80,6 +82,7 @@ type primitive =
   | Pfloatcomp of comparison
   (* String operations *)
   | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets
+  | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
   | Pmakearray of array_kind * mutable_flag
   | Pduparray of array_kind * mutable_flag
