@@ -15,20 +15,20 @@
 
 (* Byte sequence operations *)
 
-external length : bytes -> int = "%string_length"
+external length : bytes -> int = "%bytes_length"
 external string_length : string -> int = "%string_length"
-external get : bytes -> int -> char = "%string_safe_get"
-external set : bytes -> int -> char -> unit = "%string_safe_set"
+external get : bytes -> int -> char = "%bytes_safe_get"
+external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 external create : int -> bytes = "caml_create_string"
-external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
+external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_fill : bytes -> int -> int -> char -> unit
                      = "caml_fill_string" [@@noalloc]
-external unsafe_to_string : bytes -> string = "%identity"
-external unsafe_of_string : string -> bytes = "%identity"
+external unsafe_to_string : bytes -> string = "%bytes_to_string"
+external unsafe_of_string : string -> bytes = "%bytes_of_string"
 
 external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" [@@noalloc]
+                     = "caml_blit_bytes" [@@noalloc]
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
 
