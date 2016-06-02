@@ -40,7 +40,7 @@ let prim_size (prim : Lambda.primitive) args =
   | Praise _ -> 4
   | Pstringlength -> 5
   | Pbyteslength -> 5
-  | Pstringrefs | Pstringsets -> 6
+  | Pstringrefs -> 6
   | Pbytesrefs | Pbytessets -> 6
   | Pmakearray _ -> 5 + List.length args
   | Parraylength Pgenarray -> 6

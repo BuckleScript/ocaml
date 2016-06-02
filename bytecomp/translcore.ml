@@ -208,9 +208,7 @@ let primitives_table = create_hashtable 57 [
   "%gefloat", Pfloatcomp Cge;
   "%string_length", Pstringlength;
   "%string_safe_get", Pstringrefs;
-  "%string_safe_set", Pstringsets;
   "%string_unsafe_get", Pstringrefu;
-  "%string_unsafe_set", Pstringsetu;
   "%bytes_length", Pbyteslength;
   "%bytes_safe_get", Pbytesrefs;
   "%bytes_safe_set", Pbytessets;
@@ -652,7 +650,7 @@ let event_function exp lam =
 let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
-  | Pccall _ | Pstringrefs | Pstringsets | Pbytesrefs | Pbytessets | Parrayrefs _ | Parraysets _ |
+  | Pccall _ | Pstringrefs  | Pbytesrefs | Pbytessets | Parrayrefs _ | Parraysets _ |
     Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply _ |
     Prevapply _ -> true
   | _ -> false

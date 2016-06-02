@@ -118,9 +118,7 @@ let for_primitive (prim : Lambda.primitive) =
   | Psetglobal _
   | Parraysetu _
   | Parraysets _
-  | Pstringsetu
   | Pbytessetu
-  | Pstringsets
   | Pbytessets
   | Pstring_set_16 _
   | Pstring_set_32 _

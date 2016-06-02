@@ -2123,11 +2123,11 @@ and transl_prim_2 env p arg1 arg2 dbg =
 and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
   (* String operations *)
-    Pstringsetu | Pbytessetu ->
+  | Pbytessetu ->
       return_unit(Cop(Cstore (Byte_unsigned, Assignment),
                       [add_int (transl env arg1) (untag_int(transl env arg2));
                         untag_int(transl env arg3)]))
-  | Pstringsets | Pbytessets ->
+  | Pbytessets ->
       return_unit
         (bind "str" (transl env arg1) (fun str ->
           bind "index" (untag_int (transl env arg2)) (fun idx ->

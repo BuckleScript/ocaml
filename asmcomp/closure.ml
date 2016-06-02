@@ -122,7 +122,7 @@ let prim_size prim args =
   | Praise _ -> 4
   | Pstringlength -> 5
   | Pbyteslength -> 5
-  | Pstringrefs | Pstringsets -> 6
+  | Pstringrefs  -> 6
   | Pbytesrefs | Pbytessets -> 6
   | Pmakearray _ -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
@@ -208,7 +208,7 @@ let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
   | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets | Pbytessetu | Pbytessets |
+           Pccall _ | Praise _ | Poffsetref _ |  Pbytessetu | Pbytessets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
   | Uprim(_, args, _) -> List.for_all is_pure_clambda args
   | _ -> false
@@ -675,7 +675,7 @@ let rec is_pure = function
     Lvar _ -> true
   | Lconst _ -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets | Pbytessetu | Pbytessets |
+           Pccall _ | Praise _ | Poffsetref _  | Pbytessetu | Pbytessets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
   | Lprim(_, args) -> List.for_all is_pure args
   | Levent(lam, _ev) -> is_pure lam
