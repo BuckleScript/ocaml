@@ -47,8 +47,21 @@ CAMLexport int caml_string_is_c_safe (value s)
   return strlen(String_val(s)) == caml_string_length(s);
 }
 
-/* [len] is a value that represents a number of bytes (chars) */
+/**
+ * [caml_create_string] is deprecated, 
+ * use [caml_create_bytes] instead
+ */
 CAMLprim value caml_create_string(value len)
+{
+  mlsize_t size = Long_val(len);
+  if (size > Bsize_wsize (Max_wosize) - 1){
+    caml_invalid_argument("String.create");
+  }
+  return caml_alloc_string(size);
+}
+
+/* [len] is a value that represents a number of bytes (chars) */
+CAMLprim value caml_create_bytes(value len)
 {
   mlsize_t size = Long_val(len);
   if (size > Bsize_wsize (Max_wosize) - 1){
@@ -297,8 +310,16 @@ CAMLprim value caml_blit_bytes(value s1, value ofs1, value s2, value ofs2,
   memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Long_val(n));
   return Val_unit;
 }
-
+/**
+ * [caml_fill_string] is deprecated, use [caml_fill_bytes] instead
+ */
 CAMLprim value caml_fill_string(value s, value offset, value len, value init)
+{
+  memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));
+  return Val_unit;
+}
+
+CAMLprim value caml_fill_bytes(value s, value offset, value len, value init)
 {
   memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));
   return Val_unit;

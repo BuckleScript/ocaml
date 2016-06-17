@@ -51,7 +51,7 @@ let l = function
 
 open Printf
 
-external bytes_create: int -> bytes = "caml_create_string"
+external bytes_create: int -> bytes = "caml_create_bytes"
 external unsafe_chr: int -> char = "%identity"
 external bytes_unsafe_set : bytes -> int -> char -> unit
                            = "%bytes_unsafe_set"

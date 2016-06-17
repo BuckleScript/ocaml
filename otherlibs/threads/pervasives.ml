@@ -190,7 +190,7 @@ external classify_float : (float [@unboxed]) -> fpclass =
 
 external string_length : string -> int = "%string_length"
 external bytes_length : bytes -> int = "%bytes_length"
-external bytes_create : int -> bytes = "caml_create_string"
+external bytes_create : int -> bytes = "caml_create_bytes"
 external string_blit : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit

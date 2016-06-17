@@ -68,7 +68,7 @@ external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 
    @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
 
-external create : int -> bytes = "caml_create_string"
+external create : int -> bytes = "caml_create_bytes"
   [@@ocaml.deprecated "Use Bytes.create instead."]
 (** [String.create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
@@ -293,5 +293,5 @@ external unsafe_blit :
   string -> int -> bytes -> int -> int -> unit
   = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string" [@@noalloc]
+  bytes -> int -> int -> char -> unit = "caml_fill_bytes" [@@noalloc]
   [@@ocaml.deprecated]

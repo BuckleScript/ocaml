@@ -32,7 +32,7 @@ external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 
     Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
-external create : int -> bytes = "caml_create_string"
+external create : int -> bytes = "caml_create_bytes"
 (** [create n] returns a new byte sequence of length [n]. The
     sequence is uninitialized and contains arbitrary bytes.
 
@@ -212,6 +212,6 @@ external unsafe_blit :
   src:bytes -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int ->
     unit = "caml_blit_bytes" [@@noalloc]
 external unsafe_fill :
-  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" [@@noalloc]
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_bytes" [@@noalloc]
 val unsafe_to_string : bytes -> string
 val unsafe_of_string : string -> bytes
