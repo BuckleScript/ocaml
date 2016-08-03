@@ -345,9 +345,11 @@ let comp_primitive p args =
   | Pfloatcomp Cgt -> Kccall("caml_gt_float", 2)
   | Pfloatcomp Cle -> Kccall("caml_le_float", 2)
   | Pfloatcomp Cge -> Kccall("caml_ge_float", 2)
-  | Pstringlength | Pbyteslength -> Kccall("caml_ml_string_length", 1)
-  | Pstringrefs | Pbytesrefs -> Kccall("caml_string_get", 2)
-  | Pbytessets -> Kccall("caml_string_set", 3)
+  | Pstringlength -> Kccall("caml_ml_string_length", 1)
+  | Pbyteslength -> Kccall("caml_ml_bytes_length", 1)
+  | Pstringrefs -> Kccall("caml_string_get", 2)
+  | Pbytesrefs -> Kccall("caml_bytes_get", 2)
+  | Pbytessets -> Kccall("caml_bytes_set", 3)
   | Pstringrefu | Pbytesrefu -> Kgetstringchar
   | Pbytessetu -> Ksetstringchar
   | Pstring_load_16(_) -> Kccall("caml_string_get16", 2)
