@@ -73,6 +73,8 @@ let comparisons_table = create_hashtable 11 [
        Pfloatcomp Ceq,
        Pccall(Primitive.simple ~name:"caml_string_equal" ~arity:2
                 ~alloc:false),
+       Pccall(Primitive.simple ~name:"caml_bytes_equal" ~arity:2
+                ~alloc:false),
        Pbintcomp(Pnativeint, Ceq),
        Pbintcomp(Pint32, Ceq),
        Pbintcomp(Pint64, Ceq),
@@ -82,6 +84,8 @@ let comparisons_table = create_hashtable 11 [
        Pintcomp Cneq,
        Pfloatcomp Cneq,
        Pccall(Primitive.simple ~name:"caml_string_notequal" ~arity:2
+                ~alloc:false),
+       Pccall(Primitive.simple ~name:"caml_bytes_notequal" ~arity:2
                 ~alloc:false),
        Pbintcomp(Pnativeint, Cneq),
        Pbintcomp(Pint32, Cneq),
@@ -93,6 +97,8 @@ let comparisons_table = create_hashtable 11 [
        Pfloatcomp Clt,
        Pccall(Primitive.simple ~name:"caml_string_lessthan" ~arity:2
                 ~alloc:false),
+       Pccall(Primitive.simple ~name:"caml_bytes_lessthan" ~arity:2
+                ~alloc:false),
        Pbintcomp(Pnativeint, Clt),
        Pbintcomp(Pint32, Clt),
        Pbintcomp(Pint64, Clt),
@@ -102,6 +108,8 @@ let comparisons_table = create_hashtable 11 [
        Pintcomp Cgt,
        Pfloatcomp Cgt,
        Pccall(Primitive.simple ~name:"caml_string_greaterthan" ~arity:2
+                ~alloc: false),
+       Pccall(Primitive.simple ~name:"caml_bytes_greaterthan" ~arity:2
                 ~alloc: false),
        Pbintcomp(Pnativeint, Cgt),
        Pbintcomp(Pint32, Cgt),
@@ -113,6 +121,8 @@ let comparisons_table = create_hashtable 11 [
        Pfloatcomp Cle,
        Pccall(Primitive.simple ~name:"caml_string_lessequal" ~arity:2
                 ~alloc:false),
+       Pccall(Primitive.simple ~name:"caml_bytes_lessequal" ~arity:2
+                ~alloc:false),
        Pbintcomp(Pnativeint, Cle),
        Pbintcomp(Pint32, Cle),
        Pbintcomp(Pint64, Cle),
@@ -122,6 +132,8 @@ let comparisons_table = create_hashtable 11 [
        Pintcomp Cge,
        Pfloatcomp Cge,
        Pccall(Primitive.simple ~name:"caml_string_greaterequal" ~arity:2
+                ~alloc:false),
+       Pccall(Primitive.simple ~name:"caml_bytes_greaterequal" ~arity:2
                 ~alloc:false),
        Pbintcomp(Pnativeint, Cge),
        Pbintcomp(Pint32, Cge),
@@ -139,6 +151,8 @@ let comparisons_table = create_hashtable 11 [
        Pccall(Primitive.simple ~name:"caml_int_compare" ~arity:2 ~alloc:false),
        unboxed_compare "caml_float_compare" Unboxed_float,
        Pccall(Primitive.simple ~name:"caml_string_compare" ~arity:2
+                ~alloc:false),
+       Pccall(Primitive.simple ~name:"caml_bytes_compare" ~arity:2
                 ~alloc:false),
        unboxed_compare "caml_nativeint_compare" (Unboxed_integer Pnativeint),
        unboxed_compare "caml_int32_compare" (Unboxed_integer Pint32),
@@ -343,7 +357,7 @@ let find_primitive loc prim_name =
     | name -> Hashtbl.find primitives_table name
 
 let specialize_comparison table env ty =
-  let (gencomp, intcomp, floatcomp, stringcomp,
+  let (gencomp, intcomp, floatcomp, stringcomp, bytescomp,
            nativeintcomp, int32comp, int64comp, _) = table in
   match () with
   | () when is_base_type env ty Predef.path_int
@@ -351,6 +365,7 @@ let specialize_comparison table env ty =
          || (maybe_pointer_type env ty = Immediate)   -> intcomp
   | () when is_base_type env ty Predef.path_float     -> floatcomp
   | () when is_base_type env ty Predef.path_string    -> stringcomp
+  | () when is_base_type env ty Predef.path_bytes     -> bytescomp
   | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
   | () when is_base_type env ty Predef.path_int32     -> int32comp
   | () when is_base_type env ty Predef.path_int64     -> int64comp
@@ -362,7 +377,7 @@ let specialize_comparison table env ty =
 let specialize_primitive loc p env ty ~has_constant_constructor =
   try
     let table = Hashtbl.find comparisons_table p.prim_name in
-    let (gencomp, intcomp, _, _, _, _, _, simplify_constant_constructor) =
+    let (gencomp, intcomp, _, _, _, _, _, _, simplify_constant_constructor) =
       table in
     if has_constant_constructor && simplify_constant_constructor then
       intcomp
