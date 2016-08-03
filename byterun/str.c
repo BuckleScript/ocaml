@@ -42,6 +42,11 @@ CAMLprim value caml_ml_string_length(value s)
   return Val_long(temp - Byte (s, temp));
 }
 
+CAMLprim value caml_ml_bytes_length(value s)
+{
+  return caml_ml_string_length(s);
+}
+
 CAMLexport int caml_string_is_c_safe (value s)
 {
   return strlen(String_val(s)) == caml_string_length(s);
@@ -65,10 +70,12 @@ CAMLprim value caml_create_bytes(value len)
 {
   mlsize_t size = Long_val(len);
   if (size > Bsize_wsize (Max_wosize) - 1){
-    caml_invalid_argument("String.create");
+    caml_invalid_argument("Bytes.create");
   }
   return caml_alloc_string(size);
 }
+
+
 
 CAMLprim value caml_string_get(value str, value index)
 {
@@ -77,6 +84,10 @@ CAMLprim value caml_string_get(value str, value index)
   return Val_int(Byte_u(str, idx));
 }
 
+CAMLprim value caml_bytes_get(value str, value index)
+{
+  return caml_string_get(str, index);
+}
 CAMLprim value caml_string_set(value str, value index, value newval)
 {
   intnat idx = Long_val(index);
@@ -84,6 +95,12 @@ CAMLprim value caml_string_set(value str, value index, value newval)
   Byte_u(str, idx) = Int_val(newval);
   return Val_unit;
 }
+
+CAMLprim value caml_bytes_set(value str, value index, value newval)
+{
+  return caml_string_set(str,index,newval);
+}
+
 
 CAMLprim value caml_string_get16(value str, value index)
 {
@@ -244,21 +261,17 @@ CAMLprim value caml_string_equal(value s1, value s2)
 
 CAMLprim value caml_bytes_equal(value s1, value s2)
 {
-  mlsize_t sz1, sz2;
-  value * p1, * p2;
-
-  if (s1 == s2) return Val_true;
-  sz1 = Wosize_val(s1);
-  sz2 = Wosize_val(s2);
-  if (sz1 != sz2) return Val_false;
-  for(p1 = Op_val(s1), p2 = Op_val(s2); sz1 > 0; sz1--, p1++, p2++)
-    if (*p1 != *p2) return Val_false;
-  return Val_true;
+  return caml_string_equal(s1,s2);
 }
 
 CAMLprim value caml_string_notequal(value s1, value s2)
 {
   return Val_not(caml_string_equal(s1, s2));
+}
+
+CAMLprim value caml_bytes_notequal(value s1, value s2)
+{
+  return caml_string_notequal(s1,s2);
 }
 
 CAMLprim value caml_string_compare(value s1, value s2)
@@ -277,24 +290,51 @@ CAMLprim value caml_string_compare(value s1, value s2)
   return Val_int(0);
 }
 
+CAMLprim value caml_bytes_compare(value s1, value s2)
+{
+  return caml_string_compare(s1,s2);
+}
+
 CAMLprim value caml_string_lessthan(value s1, value s2)
 {
   return caml_string_compare(s1, s2) < Val_int(0) ? Val_true : Val_false;
 }
+
+CAMLprim value caml_bytes_lessthan(value s1, value s2)
+{
+  return caml_string_lessthan(s1,s2);
+}
+
 
 CAMLprim value caml_string_lessequal(value s1, value s2)
 {
   return caml_string_compare(s1, s2) <= Val_int(0) ? Val_true : Val_false;
 }
 
+CAMLprim value caml_bytes_lessequal(value s1, value s2)
+{
+  return caml_string_lessequal(s1,s2);
+}
+
+
 CAMLprim value caml_string_greaterthan(value s1, value s2)
 {
   return caml_string_compare(s1, s2) > Val_int(0) ? Val_true : Val_false;
 }
 
+CAMLprim value caml_bytes_greaterthan(value s1, value s2)
+{
+  return caml_string_greaterthan(s1,s2);
+}
+
 CAMLprim value caml_string_greaterequal(value s1, value s2)
 {
   return caml_string_compare(s1, s2) >= Val_int(0) ? Val_true : Val_false;
+}
+
+CAMLprim value caml_bytes_greaterequal(value s1, value s2)
+{
+  return caml_string_greaterequal(s1,s2);
 }
 
 CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
