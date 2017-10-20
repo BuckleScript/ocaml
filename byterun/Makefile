@@ -17,6 +17,7 @@ include ../config/Makefile
 
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 
 # The PROGRAMS (resp. LIBRARIES) variable list the files to build and
 # install as programs in $(INSTALL_BINDIR) (resp. libraries in
@@ -53,18 +54,18 @@ endif
 
 CFLAGS += $(IFLEXDIR)
 
+ifneq "$(CCOMPTYPE)" "msvc"
+CFLAGS += -g
+endif
+
 DFLAGS=$(CFLAGS) -DDEBUG
 IFLAGS=$(CFLAGS) -DCAML_INSTR
 PICFLAGS=$(CFLAGS) $(SHAREDCCCOMPOPTS)
 
-ifneq "$(CCOMPTYPE)" "msvc"
-DFLAGS += -g
-endif
-
 DBGO=d.$(O)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
-LIBS = $(call SYSLIB,ws2_32) $(EXTRALIBS)
+LIBS = $(BYTECCLIBS) $(EXTRALIBS)
 ifdef BOOTSTRAPPING_FLEXLINK
 MAKE_OCAMLRUN=$(MKEXE_BOOT)
 else
@@ -105,11 +106,8 @@ ld.conf: ../config/Makefile
 install:
 	cp $(PROGRAMS) "$(INSTALL_BINDIR)"
 	cp $(LIBRARIES) "$(INSTALL_LIBDIR)"
-	mkdir -p "$(INSTALL_LIBDIR)/caml"
-	for i in caml/*.h; do \
-	  sed -f ../tools/cleanup-header $$i \
-	      > "$(INSTALL_LIBDIR)/$$i"; \
-	done
+	mkdir -p "$(INSTALL_INCDIR)"
+	cp caml/*.h "$(INSTALL_INCDIR)"
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
@@ -176,13 +174,13 @@ libcamlrun.$(A): $(OBJS)
 	$(call MKLIB,$@, $^)
 
 ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
-	$(MKEXE) $(MKEXEDEBUGFLAG) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(MKEXE) $(MKEXEDEBUGFLAG) -o $@ $^ $(LIBS)
 
 libcamlrund.$(A): $(DOBJS)
 	$(call MKLIB,$@, $^)
 
 ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
-	$(MKEXE) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(MKEXE) -o $@ $^ $(LIBS)
 
 libcamlruni.$(A): $(IOBJS)
 	$(call MKLIB,$@, $^)

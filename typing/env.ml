@@ -72,37 +72,81 @@ let error err = raise (Error err)
 module EnvLazy : sig
   type ('a,'b) t
 
+  type log
+
   val force : ('a -> 'b) -> ('a,'b) t -> 'b
   val create : 'a -> ('a,'b) t
   val get_arg : ('a,'b) t -> 'a option
+
+  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns [None] then
+     [t] is recorded in [log]. [backtrack log] will then reset all the recorded [t]s back
+     to their original state. *)
+  val log : unit -> log
+  val force_logged : log -> ('a -> 'b option) -> ('a,'b option) t -> 'b option
+  val backtrack : log -> unit
 
 end  = struct
 
   type ('a,'b) t = ('a,'b) eval ref
 
   and ('a,'b) eval =
-      Done of 'b
+    | Done of 'b
     | Raise of exn
     | Thunk of 'a
 
+  type undo =
+    | Nil
+    | Cons : ('a, 'b) t * 'a * undo -> undo
+
+  type log = undo ref
+
   let force f x =
     match !x with
-        Done x -> x
-      | Raise e -> raise e
-      | Thunk e ->
-          try
-            let y = f e in
-            x := Done y;
-            y
-          with e ->
-            x := Raise e;
-            raise e
+    | Done x -> x
+    | Raise e -> raise e
+    | Thunk e ->
+        match f e with
+        | y ->
+          x := Done y;
+          y
+        | exception e ->
+          x := Raise e;
+          raise e
 
   let get_arg x =
     match !x with Thunk a -> Some a | _ -> None
 
   let create x =
     ref (Thunk x)
+
+  let log () =
+    ref Nil
+
+  let force_logged log f x =
+    match !x with
+    | Done x -> x
+    | Raise e -> raise e
+    | Thunk e ->
+      match f e with
+      | None ->
+          x := Done None;
+          log := Cons(x, e, !log);
+          None
+      | Some _ as y ->
+          x := Done y;
+          y
+      | exception e ->
+          x := Raise e;
+          raise e
+
+  let backtrack log =
+    let rec loop = function
+      | Nil -> ()
+      | Cons(x, e, rest) ->
+          x := Thunk e;
+          loop rest
+    in
+    loop !log
 
 end
 
@@ -125,7 +169,7 @@ type summary =
 module TycompTbl =
   struct
     (** This module is used to store components of types (i.e. labels
-        and contructors).  We keep a representation of each nested
+        and constructors).  We keep a representation of each nested
         "open" and the set of local bindings between each of them. *)
 
     type 'a t = {
@@ -417,8 +461,9 @@ and module_components =
   {
     deprecated: string option;
     loc: Location.t;
-    comps: (t * Subst.t * Path.t * Types.module_type, module_components_repr)
-           EnvLazy.t;
+    comps:
+      (t * Subst.t * Path.t * Types.module_type, module_components_repr option)
+        EnvLazy.t;
   }
 
 and module_components_repr =
@@ -523,6 +568,22 @@ let diff env1 env2 =
   IdTbl.diff_keys env1.modules env2.modules @
   IdTbl.diff_keys env1.classes env2.classes
 
+type can_load_cmis =
+  | Can_load_cmis
+  | Cannot_load_cmis of EnvLazy.log
+
+let can_load_cmis = ref Can_load_cmis
+
+let without_cmis f x =
+  let log = EnvLazy.log () in
+  let res =
+    Misc.(protect_refs
+            [R (can_load_cmis, Cannot_load_cmis log)]
+            (fun () -> f x))
+  in
+  EnvLazy.backtrack log;
+  res
+
 (* Forward declarations *)
 
 let components_of_module' =
@@ -532,14 +593,14 @@ let components_of_module' =
        module_components)
 let components_of_module_maker' =
   ref ((fun (_env, _sub, _path, _mty) -> assert false) :
-          t * Subst.t * Path.t * module_type -> module_components_repr)
+          t * Subst.t * Path.t * module_type -> module_components_repr option)
 let components_of_functor_appl' =
   ref ((fun _f _env _p1 _p2 -> assert false) :
           functor_components -> t -> Path.t -> Path.t -> module_components)
 let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
-  ref ((fun _env _mty1 _path1 _mty2 -> assert false) :
-          t -> module_type -> Path.t -> module_type -> unit)
+  ref ((fun ~loc:_ _env _mty1 _path1 _mty2 -> assert false) :
+          loc:Location.t -> t -> module_type -> Path.t -> module_type -> unit)
 let strengthen =
   (* to be filled with Mtype.strengthen *)
   ref ((fun ~aliasable:_ _env _mty _path -> assert false) :
@@ -548,9 +609,27 @@ let strengthen =
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none}
 
-let get_components c =
-  EnvLazy.force !components_of_module_maker' c.comps
+let get_components_opt c =
+  match !can_load_cmis with
+  | Can_load_cmis ->
+    EnvLazy.force !components_of_module_maker' c.comps
+  | Cannot_load_cmis log ->
+    EnvLazy.force_logged log !components_of_module_maker' c.comps
 
+let empty_structure =
+  Structure_comps {
+    comp_values = Tbl.empty;
+    comp_constrs = Tbl.empty;
+    comp_labels = Tbl.empty;
+    comp_types = Tbl.empty;
+    comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
+    comp_components = Tbl.empty; comp_classes = Tbl.empty;
+    comp_cltypes = Tbl.empty }
+
+let get_components c =
+  match get_components_opt c with
+  | None -> empty_structure
+  | Some c -> c
 
 (* The name of the compilation unit currently compiled.
    "" if outside a compilation unit. *)
@@ -678,38 +757,37 @@ let read_pers_struct check modname filename =
   acknowledge_pers_struct check modname
     { Persistent_signature.filename; cmi }
 
-let can_load_cmis = ref true
-let without_cmis f x =
-  Misc.(protect_refs [R (can_load_cmis, false)] (fun () -> f x))
-
 let find_pers_struct check name =
   if name = "*predef*" then raise Not_found;
   match Hashtbl.find persistent_structures name with
   | Some ps -> ps
   | None -> raise Not_found
-  | exception Not_found when !can_load_cmis ->
-      let ps =
-        match !Persistent_signature.load ~unit_name:name with
-        | Some ps -> ps
-        | None ->
-          Hashtbl.add persistent_structures name None;
-          raise Not_found
-      in
-      add_import name;
-      acknowledge_pers_struct check name ps
+  | exception Not_found ->
+    match !can_load_cmis with
+    | Cannot_load_cmis _ -> raise Not_found
+    | Can_load_cmis ->
+        let ps =
+          match !Persistent_signature.load ~unit_name:name with
+          | Some ps -> ps
+          | None ->
+            Hashtbl.add persistent_structures name None;
+            raise Not_found
+        in
+        add_import name;
+        acknowledge_pers_struct check name ps
 
 (* Emits a warning if there is no valid cmi for name *)
-let check_pers_struct name =
+let check_pers_struct ~loc name =
   try
     ignore (find_pers_struct false name)
   with
   | Not_found ->
       let warn = Warnings.No_cmi_file(name, None) in
-        Location.prerr_warning Location.none warn
+        Location.prerr_warning loc warn
   | Cmi_format.Error err ->
       let msg = Format.asprintf "%a" Cmi_format.report_error err in
       let warn = Warnings.No_cmi_file(name, Some msg) in
-        Location.prerr_warning Location.none warn
+        Location.prerr_warning loc warn
   | Error err ->
       let msg =
         match err with
@@ -730,7 +808,7 @@ let check_pers_struct name =
         | Illegal_value_name _ -> assert false
       in
       let warn = Warnings.No_cmi_file(name, Some msg) in
-        Location.prerr_warning Location.none warn
+        Location.prerr_warning loc warn
 
 let read_pers_struct modname filename =
   read_pers_struct true modname filename
@@ -738,15 +816,15 @@ let read_pers_struct modname filename =
 let find_pers_struct name =
   find_pers_struct true name
 
-let check_pers_struct name =
+let check_pers_struct ~loc name =
   if not (Hashtbl.mem persistent_structures name) then begin
     (* PR#6843: record the weak dependency ([add_import]) regardless of
-       whether the check suceeds, to help make builds more
+       whether the check succeeds, to help make builds more
        deterministic. *)
     add_import name;
     if (Warnings.is_active (Warnings.No_cmi_file("", None))) then
       !add_delayed_check_forward
-        (fun () -> check_pers_struct name)
+        (fun () -> check_pers_struct ~loc name)
   end
 
 let reset_cache () =
@@ -1026,9 +1104,7 @@ let report_deprecated ?loc p deprecated =
   match loc, deprecated with
   | Some loc, Some txt ->
       let txt = if txt = "" then "" else "\n" ^ txt in
-      Location.prerr_warning loc
-        (Warnings.Deprecated (Printf.sprintf "module %s%s"
-                                (Path.name p) txt))
+      Location.deprecated loc (Printf.sprintf "module %s%s" (Path.name p) txt)
   | _ -> ()
 
 let mark_module_used env name loc =
@@ -1061,7 +1137,8 @@ let rec lookup_module_descr_aux ?loc lid env =
       let {md_type=mty2} = find_module p2 env in
       begin match get_components desc1 with
         Functor_comps f ->
-          Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
+          let loc = match loc with Some l -> l | None -> Location.none in
+          Misc.may (!check_modtype_inclusion ~loc env mty2 p2) f.fcomp_arg;
           (Papply(p1, p2), !components_of_functor_appl' f env p1 p2)
       | Structure_comps _ ->
           raise Not_found
@@ -1098,7 +1175,10 @@ and lookup_module ~load ?loc lid env : Path.t =
       with Not_found ->
         if s = !current_unit then raise Not_found;
         let p = Pident(Ident.create_persistent s) in
-        if !Clflags.transparent_modules && not load then check_pers_struct s
+        if !Clflags.transparent_modules && not load
+        then
+          let loc = match loc with Some l -> l | None -> Location.none in
+          check_pers_struct ~loc s
         else begin
           let ps = find_pers_struct s in
           report_deprecated ?loc p ps.ps_comps.deprecated
@@ -1125,7 +1205,8 @@ and lookup_module ~load ?loc lid env : Path.t =
       let p = Papply(p1, p2) in
       begin match get_components desc1 with
         Functor_comps f ->
-          Misc.may (!check_modtype_inclusion env mty2 p2) f.fcomp_arg;
+          let loc = match loc with Some l -> l | None -> Location.none in
+          Misc.may (!check_modtype_inclusion ~loc env mty2 p2) f.fcomp_arg;
           p
       | Structure_comps _ ->
           raise Not_found
@@ -1591,7 +1672,7 @@ let rec components_of_module ~deprecated ~loc env sub path mty =
   }
 
 and components_of_module_maker (env, sub, path, mty) =
-  (match scrape_alias env mty with
+  match scrape_alias env mty with
     Mty_signature sg ->
       let c =
         { comp_values = Tbl.empty;
@@ -1614,6 +1695,7 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
+            Datarepr.set_row_name decl' (Subst.type_path sub (Path.Pident id));
             let constructors =
               List.map snd (Datarepr.constructors_of_type path decl') in
             let labels =
@@ -1669,26 +1751,18 @@ and components_of_module_maker (env, sub, path, mty) =
             c.comp_cltypes <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes)
         sg pl;
-        Structure_comps c
+        Some (Structure_comps c)
   | Mty_functor(param, ty_arg, ty_res) ->
-        Functor_comps {
+        Some (Functor_comps {
           fcomp_param = param;
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
              they are interpreted in the outer environment *)
           fcomp_arg = may_map (Subst.modtype sub) ty_arg;
           fcomp_res = Subst.modtype sub ty_res;
           fcomp_cache = Hashtbl.create 17;
-          fcomp_subst_cache = Hashtbl.create 17 }
+          fcomp_subst_cache = Hashtbl.create 17 })
   | Mty_ident _
-  | Mty_alias _ ->
-        Structure_comps {
-          comp_values = Tbl.empty;
-          comp_constrs = Tbl.empty;
-          comp_labels = Tbl.empty;
-          comp_types = Tbl.empty;
-          comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
-          comp_components = Tbl.empty; comp_classes = Tbl.empty;
-          comp_cltypes = Tbl.empty })
+  | Mty_alias _ -> None
 
 (* Insertion of bindings by identifier + path *)
 
@@ -2008,17 +2082,21 @@ let open_pers_signature name env =
   | Some env -> env
   | None -> assert false (* a compilation unit cannot refer to a functor *)
 
-let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root env =
+let open_signature
+    ?(used_slot = ref false)
+    ?(loc = Location.none) ?(toplevel = false) ovf root env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
      && (Warnings.is_active (Warnings.Unused_open "")
          || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
          || Warnings.is_active (Warnings.Open_shadow_label_constructor ("","")))
   then begin
-    let used = ref false in
+    let used = used_slot in
     !add_delayed_check_forward
       (fun () ->
-        if not !used then
-          Location.prerr_warning loc (Warnings.Unused_open (Path.name root))
+         if not !used then begin
+           used := true;
+           Location.prerr_warning loc (Warnings.Unused_open (Path.name root))
+         end
       );
     let shadowed = ref [] in
     let slot s b =
@@ -2085,7 +2163,6 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       (match deprecated with Some s -> [Deprecated s] | None -> []);
     ]
   in
-  let oc = open_out_bin filename in
   try
     let cmi = {
       cmi_name = modname;
@@ -2093,8 +2170,10 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       cmi_crcs = imports;
       cmi_flags = flags;
     } in
-    let crc = output_cmi filename oc cmi in
-    close_out oc;
+    let crc =
+      output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)
+         ~mode: [Open_binary] filename
+         (fun temp_filename oc -> output_cmi temp_filename oc cmi) in
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let comps =
@@ -2112,7 +2191,6 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     save_pers_struct crc ps;
     cmi
   with exn ->
-    close_out oc;
     remove_file filename;
     raise exn
 
@@ -2271,7 +2349,7 @@ let report_error ppf = function
       fprintf ppf
         "@[<hov>Unit %s imports from %s, compiled with -unsafe-string.@ %s@]"
         export import "This compiler has been configured in strict \
-                       -safe-string mode"
+                       safe-string mode (-force-safe-string)"
   | Missing_module(_, path1, path2) ->
       fprintf ppf "@[@[<hov>";
       if Path.same path1 path2 then
