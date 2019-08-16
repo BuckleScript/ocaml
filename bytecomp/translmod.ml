@@ -88,14 +88,19 @@ let rec apply_coercion loc strict restr arg =
   match restr with
     Tcoerce_none ->
       arg
-  | Tcoerce_structure(pos_cc_list, id_pos_list) ->
+  | Tcoerce_structure(pos_cc_list, id_pos_list, runtime_fields) ->
+      assert (List.length runtime_fields = List.length pos_cc_list);
+      let names = Array.of_list runtime_fields in
       name_lambda strict arg (fun id ->
-        let get_field pos = Lprim(Pfield (pos, Fld_na (*TODO*)),[Lvar id], loc) in
+        let get_field_i i pos =
+          Lprim(Pfield (pos, Fld_module names.(i)),[Lvar id], loc) in
+        let get_field_name name pos =
+          Lprim(Pfield (pos, Fld_module name),[Lvar id], loc) in
         let lam =
-          Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable),
-                List.map (apply_coercion_field loc get_field) pos_cc_list, loc)
+          Lprim(Pmakeblock(0, Blk_module runtime_fields, Immutable),
+                List.mapi (fun i x -> (apply_coercion_field loc (get_field_i i) x)) pos_cc_list, loc)
         in
-        wrap_id_pos_list loc id_pos_list get_field lam)
+        wrap_id_pos_list loc id_pos_list get_field_name lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
@@ -103,7 +108,7 @@ let rec apply_coercion loc strict restr arg =
           apply_coercion loc Strict cc_res
             (Lapply(Lvar id, [apply_coercion loc Alias cc_arg (Lvar param)],
                    Location.none))))
-  | Tcoerce_primitive (_,p) ->
+  | Tcoerce_primitive (p, _) ->
       transl_primitive Location.none p
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
@@ -122,7 +127,7 @@ and wrap_id_pos_list loc id_pos_list get_field lam =
       if IdentSet.mem id' fv then
         let id'' = Ident.create (Ident.name id') in
         (Llet(Alias,id'',
-              apply_coercion loc Alias c (get_field pos),lam),
+              apply_coercion loc Alias c (get_field (Ident.name id') pos),lam),
          Ident.add id' (Lvar id'') s)
       else (lam,s))
       (lam, Ident.empty) id_pos_list
@@ -138,7 +143,7 @@ let rec compose_coercions c1 c2 =
   match (c1, c2) with
     (Tcoerce_none, c2) -> c2
   | (c1, Tcoerce_none) -> c1
-  | (Tcoerce_structure (pc1, ids1), Tcoerce_structure (pc2, ids2)) ->
+  | (Tcoerce_structure (pc1, ids1, runtime_fields1), Tcoerce_structure (pc2, ids2, _runtime_fields2)) ->
       let v2 = Array.of_list pc2 in
       let ids1 =
         List.map (fun (id,pos1,c1) ->
@@ -152,7 +157,8 @@ let rec compose_coercions c1 c2 =
                   | (p1, c1) ->
                       let (p2, c2) = v2.(p1) in (p2, compose_coercions c1 c2))
              pc1,
-         ids1 @ ids2)
+         ids1 @ ids2,
+         runtime_fields1)
   | (Tcoerce_functor(arg1, res1), Tcoerce_functor(arg2, res2)) ->
       Tcoerce_functor(compose_coercions arg2 arg1,
                       compose_coercions res1 res2)
@@ -223,6 +229,10 @@ let undefined_location loc =
                       Const_base(Const_int char)]))
 
 let init_shape modl =
+  let add_name x id =
+    if !Clflags.bs_only then
+      Const_block (0, Lambda.default_tag_info, [x; Const_base (Const_string (Ident.name id, None))])
+    else x in
   let rec init_shape_mod env mty =
     match Mtype.scrape env mty with
       Mty_ident _ ->
@@ -244,18 +254,18 @@ let init_shape modl =
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
               Const_pointer (1, Lambda.default_pointer_info) (* camlinternalMod.Lazy *)
           | _ -> raise Not_found in
-        init_v :: init_shape_struct env rem
+        (add_name init_v id) :: init_shape_struct env rem
     | Sig_type(id, tdecl, _) :: rem ->
         init_shape_struct (Env.add_type ~check:false id tdecl env) rem
     | Sig_typext(id, ext, _) :: rem ->
         raise Not_found
     | Sig_module(id, md, _) :: rem ->
-        init_shape_mod env md.md_type ::
+        (add_name (init_shape_mod env md.md_type) id) ::
         init_shape_struct (Env.add_module_declaration id md env) rem
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class(id, cdecl, _) :: rem ->
-        Const_pointer (2, Lambda.default_pointer_info) (* camlinternalMod.Class *)
+        (add_name (Const_pointer (2, Lambda.default_pointer_info)) id) (* camlinternalMod.Class *)
         :: init_shape_struct env rem
     | Sig_class_type(id, ctyp, _) :: rem ->
         init_shape_struct env rem
@@ -404,13 +414,14 @@ and transl_structure loc fields cc rootpath = function
         Tcoerce_none ->
           let fields =  List.rev fields in
           let field_names = List.map (fun id -> id.Ident.name) fields in
-          Lprim(Pmakeblock(0, Lambda.Blk_module (Some field_names) , Immutable),
+          Lprim(Pmakeblock(0, Lambda.Blk_module field_names, Immutable),
                 List.fold_right (fun id acc -> begin
                       (if is_top rootpath then 
                          export_identifiers :=  id :: !export_identifiers);
                       (Lvar id :: acc) end) fields [] , loc
                  )
-      | Tcoerce_structure(pos_cc_list, id_pos_list) ->
+      | Tcoerce_structure(pos_cc_list, id_pos_list, runtime_fields) ->
+          assert (List.length runtime_fields = List.length pos_cc_list);
               (* Do not ignore id_pos_list ! *)
           (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
           List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
@@ -419,26 +430,27 @@ and transl_structure loc fields cc rootpath = function
           let v = Array.of_list (List.rev fields) in
           let get_field pos = Lvar v.(pos)
           and ids = List.fold_right IdentSet.add fields IdentSet.empty in
-          let (result, names) = List.fold_right
-              (fun  (pos, cc) (code, name) ->
+          let get_field_name _name = get_field in
+          let result = List.fold_right
+              (fun  (pos, cc) code ->
                  begin match cc with
-                 | Tcoerce_primitive (id,p) -> 
+                 | Tcoerce_primitive (p, id) -> 
                      (if is_top rootpath then 
                         export_identifiers := id:: !export_identifiers);
-                     (transl_primitive Location.none p :: code, p.Primitive.prim_name ::name)
+                     transl_primitive Location.none p :: code
                  | _ -> 
                      (if is_top rootpath then 
                         export_identifiers :=  v.(pos) :: !export_identifiers);
-                     (apply_coercion loc Strict cc (get_field pos) :: code, v.(pos).Ident.name :: name)
+                     apply_coercion loc Strict cc (get_field pos) :: code
                  end)
-              pos_cc_list ([], [])in 
+              pos_cc_list [] in
           let lam =
-            (Lprim(Pmakeblock(0, Blk_module (Some names), Immutable),
+            (Lprim(Pmakeblock(0, Blk_module runtime_fields, Immutable),
                    result, loc))
           and id_pos_list =
             List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list
           in
-          wrap_id_pos_list loc id_pos_list get_field lam
+          wrap_id_pos_list loc id_pos_list get_field_name lam
       | _ ->
           fatal_error "Translmod.transl_structure"
       end
@@ -495,7 +507,7 @@ and transl_structure loc fields cc rootpath = function
         [] ->
           transl_structure loc newfields cc rootpath rem
       | id :: ids ->
-          Llet(Alias, id, Lprim(Pfield (pos, Fld_na), [Lvar mid], incl.incl_loc),
+          Llet(Alias, id, Lprim(Pfield (pos, Fld_module (Ident.name id)), [Lvar mid], incl.incl_loc),
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(pure_module modl, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
@@ -780,13 +792,13 @@ let build_ident_map restr idlist more_ids =
     match restr with
         Tcoerce_none ->
           natural_map 0 Ident.empty [] idlist
-      | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
+      | Tcoerce_structure (pos_cc_list, _id_pos_list, _runtime_fields) ->
               (* ignore _id_pos_list as the ids are already bound *)
         let idarray = Array.of_list idlist in
         let rec export_map pos map prims undef = function
         [] ->
           natural_map pos map prims undef
-          | (source_pos, Tcoerce_primitive (_,p)) :: rem ->
+          | (source_pos, Tcoerce_primitive (p, _)) :: rem ->
             export_map (pos + 1) map ((pos, p) :: prims) undef rem
           | (source_pos, cc) :: rem ->
             let id = idarray.(source_pos) in
@@ -968,7 +980,7 @@ let transl_store_package component_names target_name coercion =
                  [Lprim(Pgetglobal target_name, [], Location.none);
                   get_component id], Location.none))
          0 component_names)
-  | Tcoerce_structure (pos_cc_list, id_pos_list) ->
+  | Tcoerce_structure (pos_cc_list, id_pos_list, _runtime_fields) ->
       let components =
         Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable), List.map get_component component_names, Location.none)
       in
