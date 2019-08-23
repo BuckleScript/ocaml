@@ -92,7 +92,7 @@ let rec apply_coercion loc strict restr arg =
     when Includemod.is_hack_for_alias path ->
       let extracted = Includemod.extract_hack_for_alias path in
       assert (runtime_fields |> String.concat("$") = extracted);
-      Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" extracted;
+      (* Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" extracted; *)
       let names = Array.of_list runtime_fields in
       name_lambda strict arg (fun id ->
         let get_field_i i pos =
@@ -436,7 +436,7 @@ and transl_structure loc fields cc rootpath = function
 
           let extracted = Includemod.extract_hack_for_alias path in
           assert (runtime_fields |> String.concat("$") = extracted);
-          Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" extracted;    
+          (* Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" extracted;     *)
           
           let v = Array.of_list (List.rev fields) in
           let get_field pos = Lvar v.(pos)
