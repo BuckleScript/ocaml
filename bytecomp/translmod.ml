@@ -90,9 +90,9 @@ let rec apply_coercion loc strict restr arg =
       arg
   | Tcoerce_alias (path, Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list))
     when Includemod.is_hack_for_alias path ->
-    Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" (Includemod.extract_hack_for_alias path);
-    apply_coercion loc strict (Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list)) arg
-  | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
+      let extracted = Includemod.extract_hack_for_alias path in
+      assert (runtime_fields |> String.concat("$") = extracted);
+      Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" extracted;
       let names = Array.of_list runtime_fields in
       name_lambda strict arg (fun id ->
         let get_field_i i pos =
@@ -100,10 +100,12 @@ let rec apply_coercion loc strict restr arg =
         let get_field_name name pos =
           Lprim(Pfield (pos, Fld_module name),[Lvar id], loc) in
         let lam =
-          Lprim(Pmakeblock(0, Blk_module (Some runtime_fields), Immutable),
+          Lprim(Pmakeblock(0, Blk_module runtime_fields, Immutable),
                 List.mapi (fun i x -> (apply_coercion_field loc (get_field_i i) x)) pos_cc_list, loc)
         in
         wrap_id_pos_list loc id_pos_list get_field_name lam)
+  | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
+      assert false
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
       name_lambda strict arg (fun id ->
@@ -114,7 +116,7 @@ let rec apply_coercion loc strict restr arg =
   | Tcoerce_primitive (_,p) ->
       transl_primitive Location.none p
   | Tcoerce_alias (path, cc) when Includemod.is_hack_for_alias path ->
-      apply_coercion loc strict cc arg
+      assert false
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
         (fun id -> apply_coercion loc Alias cc (transl_normal_path path))
@@ -148,33 +150,27 @@ let rec compose_coercions c1 c2 =
   match (c1, c2) with
     (Tcoerce_none, c2) -> c2
   | (c1, Tcoerce_none) -> c1
-  | (Tcoerce_structure (runtime_fields1, pc1, ids1), Tcoerce_structure (runtime_fields2, pc2, ids2)) ->
+  | Tcoerce_alias (path1, Tcoerce_structure (runtime_fields1, pc1, ids1)),
+    Tcoerce_alias (path2, Tcoerce_structure (runtime_fields2, pc2, ids2))
+    when Includemod.is_hack_for_alias path1 && Includemod.is_hack_for_alias path2 ->
       let v2 = Array.of_list pc2 in
       let ids1 =
         List.map (fun (id,pos1,c1) ->
           let (pos2,c2) = v2.(pos1) in (id, pos2, compose_coercions c1 c2))
           ids1
       in
-      Tcoerce_structure (
-          runtime_fields1 @ runtime_fields2,
+      Tcoerce_alias (path1, Tcoerce_structure (
+          runtime_fields1,
           List.map
           (function (p1, Tcoerce_primitive _) as x ->
                       x (* (p1, Tcoerce_primitive p) *)
                   | (p1, c1) ->
                       let (p2, c2) = v2.(p1) in (p2, compose_coercions c1 c2))
              pc1,
-         ids1 @ ids2)
+         ids1 @ ids2))
   | (Tcoerce_functor(arg1, res1), Tcoerce_functor(arg2, res2)) ->
       Tcoerce_functor(compose_coercions arg2 arg1,
                       compose_coercions res1 res2)
-
-  | (Tcoerce_alias (path1, c1), Tcoerce_alias (path2, c2))
-    when Includemod.is_hack_for_alias path1 && Includemod.is_hack_for_alias path2 ->
-      Tcoerce_alias(Includemod.compose_hacks_for_alias path1 path2, compose_coercions c1 c2)          
-  | (c1, Tcoerce_alias (path, c2)) when Includemod.is_hack_for_alias path ->
-      Tcoerce_alias(path, compose_coercions c1 c2)          
-  | (Tcoerce_alias (path, c1), c2) when Includemod.is_hack_for_alias path ->
-      Tcoerce_alias(path, compose_coercions c1 c2)          
 
   | (c1, Tcoerce_alias (path, c2)) ->
       Tcoerce_alias (path, compose_coercions c1 c2)
@@ -421,23 +417,27 @@ and transl_struct loc fields cc rootpath str =
 and transl_structure loc fields cc rootpath = function
     [] ->
       begin match cc with
-      | Tcoerce_alias (path, cc) when Includemod.is_hack_for_alias path ->
-          transl_structure loc fields cc rootpath []
       | Tcoerce_none ->
           let fields =  List.rev fields in
           let field_names = List.map (fun id -> id.Ident.name) fields in
-          Lprim(Pmakeblock(0, Lambda.Blk_module (Some field_names) , Immutable),
+          Lprim(Pmakeblock(0, Lambda.Blk_module field_names, Immutable),
                 List.fold_right (fun id acc -> begin
                       (if is_top rootpath then 
                          export_identifiers :=  id :: !export_identifiers);
                       (Lvar id :: acc) end) fields [] , loc
                  )
-      | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
+      | Tcoerce_alias (path, Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list))
+        when Includemod.is_hack_for_alias path ->
               (* Do not ignore id_pos_list ! *)
           (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
           List.iter (fun l -> Format.eprintf "%a@ " Ident.print l)
             fields;
           Format.eprintf "@]@.";*)
+
+          let extracted = Includemod.extract_hack_for_alias path in
+          assert (runtime_fields |> String.concat("$") = extracted);
+          Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" extracted;    
+          
           let v = Array.of_list (List.rev fields) in
           let get_field pos = Lvar v.(pos)
           and ids = List.fold_right IdentSet.add fields IdentSet.empty in
@@ -456,7 +456,7 @@ and transl_structure loc fields cc rootpath = function
                  end)
               pos_cc_list [] in
           let lam =
-            (Lprim(Pmakeblock(0, Blk_module (Some runtime_fields), Immutable),
+            (Lprim(Pmakeblock(0, Blk_module runtime_fields, Immutable),
                    result, loc))
           and id_pos_list =
             List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list

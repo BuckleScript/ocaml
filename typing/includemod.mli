@@ -56,4 +56,3 @@ val expand_module_alias: Env.t -> pos list -> Path.t -> Types.module_type
 
 val is_hack_for_alias: Path.t -> bool
 val extract_hack_for_alias: Path.t -> string
-val compose_hacks_for_alias : Path.t -> Path.t -> Path.t

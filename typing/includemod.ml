@@ -191,23 +191,6 @@ and print_coercion3 ppf (i, n, c) =
   Format.fprintf ppf "@[%s, %d,@ %a@]"
     (Ident.unique_name i) n print_coercion c
 
-(* Simplify a structure coercion *)
-
-let simplify_structure_coercion runtime_fields cc id_pos_list =
-  let rec is_identity_coercion pos = function
-  | [] ->
-      true
-  | (n, c) :: rem ->
-      n = pos && c = Tcoerce_none && is_identity_coercion (pos + 1) rem in
-  if is_identity_coercion 0 cc
-  then Tcoerce_none
-  else Tcoerce_structure (runtime_fields, cc, id_pos_list)
-
-(* Inclusion between module types.
-   Return the restriction that transforms a value of the smaller type
-   into a value of the bigger type. *)
-
-
 let hack_id_for_alias = (* lazy to avoid changing the id counter *)
   lazy (Ident.create "$$$XXX")
 
@@ -224,13 +207,24 @@ let extract_hack_for_alias path = match path with
   | Path.Pdot (Path.Pident id, s, _) when is_hack_id_for_alias id -> s
   | _ -> ""
 
-let compose_hacks_for_alias path1 path2 =
-  let s1 = extract_hack_for_alias path1
-  and s2 = extract_hack_for_alias path2 in
-  match s1, s2 with
-    | "", _ -> create_hack_for_alias [s2]
-    | s1, "" -> create_hack_for_alias [s1]
-    | _ -> create_hack_for_alias [s1; s2]
+(* Simplify a structure coercion *)
+
+let simplify_structure_coercion runtime_fields cc id_pos_list =
+  let rec is_identity_coercion pos = function
+  | [] ->
+      true
+  | (n, c) :: rem ->
+      n = pos && c = Tcoerce_none && is_identity_coercion (pos + 1) rem in
+  if is_identity_coercion 0 cc
+  then Tcoerce_none
+  else Tcoerce_alias (
+        create_hack_for_alias runtime_fields,
+        Tcoerce_structure (runtime_fields, cc, id_pos_list))
+
+
+(* Inclusion between module types.
+   Return the restriction that transforms a value of the smaller type
+   into a value of the bigger type. *)
 
 let rec modtypes env cxt subst mty1 mty2 =
   try
