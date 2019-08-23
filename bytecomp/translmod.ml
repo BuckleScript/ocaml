@@ -88,6 +88,10 @@ let rec apply_coercion loc strict restr arg =
   match restr with
     Tcoerce_none ->
       arg
+  | Tcoerce_alias (path, Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list))
+    when Includemod.is_hack_for_alias path ->
+    Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" (Includemod.extract_hack_for_alias path);
+    apply_coercion loc strict (Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list)) arg
   | Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list) ->
       let names = Array.of_list runtime_fields in
       name_lambda strict arg (fun id ->
@@ -109,6 +113,8 @@ let rec apply_coercion loc strict restr arg =
                    Location.none))))
   | Tcoerce_primitive (_,p) ->
       transl_primitive Location.none p
+  | Tcoerce_alias (path, cc) when Includemod.is_hack_for_alias path ->
+      apply_coercion loc strict cc arg
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
         (fun id -> apply_coercion loc Alias cc (transl_normal_path path))
@@ -161,6 +167,15 @@ let rec compose_coercions c1 c2 =
   | (Tcoerce_functor(arg1, res1), Tcoerce_functor(arg2, res2)) ->
       Tcoerce_functor(compose_coercions arg2 arg1,
                       compose_coercions res1 res2)
+
+  | (Tcoerce_alias (path1, c1), Tcoerce_alias (path2, c2))
+    when Includemod.is_hack_for_alias path1 && Includemod.is_hack_for_alias path2 ->
+      Tcoerce_alias(Includemod.compose_hacks_for_alias path1 path2, compose_coercions c1 c2)          
+  | (c1, Tcoerce_alias (path, c2)) when Includemod.is_hack_for_alias path ->
+      Tcoerce_alias(path, compose_coercions c1 c2)          
+  | (Tcoerce_alias (path, c1), c2) when Includemod.is_hack_for_alias path ->
+      Tcoerce_alias(path, compose_coercions c1 c2)          
+
   | (c1, Tcoerce_alias (path, c2)) ->
       Tcoerce_alias (path, compose_coercions c1 c2)
   | (_, _) ->
@@ -406,7 +421,9 @@ and transl_struct loc fields cc rootpath str =
 and transl_structure loc fields cc rootpath = function
     [] ->
       begin match cc with
-        Tcoerce_none ->
+      | Tcoerce_alias (path, cc) when Includemod.is_hack_for_alias path ->
+          transl_structure loc fields cc rootpath []
+      | Tcoerce_none ->
           let fields =  List.rev fields in
           let field_names = List.map (fun id -> id.Ident.name) fields in
           Lprim(Pmakeblock(0, Lambda.Blk_module (Some field_names) , Immutable),
@@ -782,6 +799,10 @@ let build_ident_map restr idlist more_ids =
       (map, prims, pos)
   | id :: rem ->
       natural_map (pos+1) (Ident.add id (pos, Tcoerce_none) map) prims rem in
+  let restr = match restr with
+    | Tcoerce_alias (path, cc) when Includemod.is_hack_for_alias path ->
+        cc
+    | _ -> restr in
   let (map, prims, pos) =
     match restr with
         Tcoerce_none ->

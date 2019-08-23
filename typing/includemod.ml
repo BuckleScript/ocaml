@@ -207,6 +207,31 @@ let simplify_structure_coercion runtime_fields cc id_pos_list =
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
 
+
+let hack_id_for_alias = (* lazy to avoid changing the id counter *)
+  lazy (Ident.create "$$$XXX")
+
+let is_hack_id_for_alias id = id == Lazy.force hack_id_for_alias
+
+let create_hack_for_alias runtime_fields =
+  Path.Pdot (Path.Pident (Lazy.force hack_id_for_alias), (runtime_fields |> String.concat "$"), 0)
+
+let is_hack_for_alias path = match path with
+  | Path.Pdot (Path.Pident id, _, _) -> is_hack_id_for_alias id
+  | _ -> false
+
+let extract_hack_for_alias path = match path with
+  | Path.Pdot (Path.Pident id, s, _) when is_hack_id_for_alias id -> s
+  | _ -> ""
+
+let compose_hacks_for_alias path1 path2 =
+  let s1 = extract_hack_for_alias path1
+  and s2 = extract_hack_for_alias path2 in
+  match s1, s2 with
+    | "", _ -> create_hack_for_alias [s2]
+    | s1, "" -> create_hack_for_alias [s1]
+    | _ -> create_hack_for_alias [s1; s2]
+
 let rec modtypes env cxt subst mty1 mty2 =
   try
     try_modtypes env cxt subst mty1 mty2
@@ -332,7 +357,11 @@ and signatures env cxt subst sig1 sig2 =
               if len1 = len2 then (* see PR#5098 *)
                 simplify_structure_coercion runtime_fields cc id_pos_list
               else
-                Tcoerce_structure (runtime_fields, cc, id_pos_list)
+              if true (* !Clflags.bs_only *) then
+                Tcoerce_alias(
+                  create_hack_for_alias runtime_fields,
+                  Tcoerce_structure (runtime_fields, cc, id_pos_list))
+              else Tcoerce_structure (runtime_fields, cc, id_pos_list)
           | _  -> raise(Error unpaired)
         end
     | item2 :: rem ->
