@@ -88,11 +88,11 @@ let rec apply_coercion loc strict restr arg =
   match restr with
     Tcoerce_none ->
       arg
-  | Tcoerce_alias (path, Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list))
+  | Tcoerce_alias (path, Tcoerce_structure(_runtime_fields, pos_cc_list, id_pos_list))
     when Includemod.is_hack_for_alias path ->
-      let extracted = Includemod.extract_hack_for_alias path in
-      assert (runtime_fields |> String.concat("$") = extracted);
-      (* Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" extracted; *)
+      let runtime_fields = Includemod.extract_hack_for_alias path in
+      (* Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" (runtime_fields |> String.concat ","); *)
+      assert (runtime_fields = _runtime_fields);
       let names = Array.of_list runtime_fields in
       name_lambda strict arg (fun id ->
         let get_field_i i pos =
@@ -426,7 +426,7 @@ and transl_structure loc fields cc rootpath = function
                          export_identifiers :=  id :: !export_identifiers);
                       (Lvar id :: acc) end) fields [] , loc
                  )
-      | Tcoerce_alias (path, Tcoerce_structure(runtime_fields, pos_cc_list, id_pos_list))
+      | Tcoerce_alias (path, Tcoerce_structure(_runtime_fields, pos_cc_list, id_pos_list))
         when Includemod.is_hack_for_alias path ->
               (* Do not ignore id_pos_list ! *)
           (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
@@ -434,9 +434,9 @@ and transl_structure loc fields cc rootpath = function
             fields;
           Format.eprintf "@]@.";*)
 
-          let extracted = Includemod.extract_hack_for_alias path in
-          assert (runtime_fields |> String.concat("$") = extracted);
-          (* Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" extracted;     *)
+          let runtime_fields = Includemod.extract_hack_for_alias path in
+          (* Printf.eprintf "\n\nXXX encoding hack for coerce_structure found:%s\n\n" (runtime_fields |> String.concat ","); *)
+          assert (runtime_fields = _runtime_fields);         
           
           let v = Array.of_list (List.rev fields) in
           let get_field pos = Lvar v.(pos)

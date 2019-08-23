@@ -197,15 +197,25 @@ let hack_id_for_alias = (* lazy to avoid changing the id counter *)
 let is_hack_id_for_alias id = id == Lazy.force hack_id_for_alias
 
 let create_hack_for_alias runtime_fields =
-  Path.Pdot (Path.Pident (Lazy.force hack_id_for_alias), (runtime_fields |> String.concat "$"), 0)
+  Path.Pdot (Path.Pident (Lazy.force hack_id_for_alias), (runtime_fields |> String.concat ","), 0)
 
 let is_hack_for_alias path = match path with
   | Path.Pdot (Path.Pident id, _, _) -> is_hack_id_for_alias id
   | _ -> false
 
+let rec split_from s n = match String.index_from s n ',' with
+  | pos -> String.sub s n (pos-n) :: split_from s (pos+1)
+  | exception Not_found ->
+    let len = String.length s - n in
+    if len = 0 then [] else [String.sub s n len]
+
+let split s = split_from s 0
+
 let extract_hack_for_alias path = match path with
-  | Path.Pdot (Path.Pident id, s, _) when is_hack_id_for_alias id -> s
-  | _ -> ""
+  | Path.Pdot (Path.Pident id, s, _) when is_hack_id_for_alias id ->
+    split s
+  | _ ->
+    []
 
 (* Simplify a structure coercion *)
 

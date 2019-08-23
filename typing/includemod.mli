@@ -55,4 +55,4 @@ val report_error: formatter -> error list -> unit
 val expand_module_alias: Env.t -> pos list -> Path.t -> Types.module_type
 
 val is_hack_for_alias: Path.t -> bool
-val extract_hack_for_alias: Path.t -> string
+val extract_hack_for_alias: Path.t -> string list
