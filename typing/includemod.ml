@@ -171,7 +171,7 @@ let rec print_coercion ppf c =
   let pr fmt = Format.fprintf ppf fmt in
   match c with
     Tcoerce_none -> pr "id"
-  | Tcoerce_structure (_, fl, nl) ->
+  | Tcoerce_structure (fl, nl) ->
       pr "@[<2>struct@ %a@ %a@]"
         (print_list print_coercion2) fl
         (print_list print_coercion3) nl
@@ -229,7 +229,7 @@ let simplify_structure_coercion runtime_fields cc id_pos_list =
   then Tcoerce_none
   else Tcoerce_alias (
         create_hack_for_alias runtime_fields,
-        Tcoerce_structure (runtime_fields, cc, id_pos_list))
+        Tcoerce_structure (cc, id_pos_list))
 
 
 (* Inclusion between module types.
@@ -361,11 +361,9 @@ and signatures env cxt subst sig1 sig2 =
               if len1 = len2 then (* see PR#5098 *)
                 simplify_structure_coercion runtime_fields cc id_pos_list
               else
-              if true (* !Clflags.bs_only *) then
                 Tcoerce_alias(
                   create_hack_for_alias runtime_fields,
-                  Tcoerce_structure (runtime_fields, cc, id_pos_list))
-              else Tcoerce_structure (runtime_fields, cc, id_pos_list)
+                  Tcoerce_structure (cc, id_pos_list))
           | _  -> raise(Error unpaired)
         end
     | item2 :: rem ->
