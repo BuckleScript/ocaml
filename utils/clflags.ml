@@ -128,6 +128,7 @@ let bs_vscode =
 let dont_record_crc_unit : string option ref = ref None
 let bs_only = ref false
 let bs_gentype = ref None
+let bs_version = ref ""
 let no_assert_false = ref false
 let bs_quiet = ref false
 #end

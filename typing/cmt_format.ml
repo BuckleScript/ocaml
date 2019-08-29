@@ -238,6 +238,11 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
     (* TODO: does not make sense to do post-proccesing for [Partial_implementaiton]*)
     match !Clflags.bs_gentype with
     | None -> ()
-    | Some cmd -> ignore (Sys.command (cmd ^ " -cmt-add " ^ filename ^ (match sourcefile with None -> "" | Some sourcefile -> ":" ^ sourcefile)))
+    | Some cmd ->
+      ignore (Sys.command (
+        cmd ^
+        " -cmt-add " ^ filename ^ (match sourcefile with None -> "" | Some sourcefile -> ":" ^ sourcefile) ^
+        " -bs-version " ^ !Clflags.bs_version
+      ))
   end;
   clear ()
