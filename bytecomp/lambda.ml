@@ -220,6 +220,8 @@ type meth_kind = Self | Public of public_info | Cached
 
 type shared_code = (int * int) list
 
+type switch_names = {consts: string array; blocks: string array}
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -247,7 +249,8 @@ and lambda_switch =
     sw_consts: (int * lambda) list;
     sw_numblocks: int;
     sw_blocks: (int * lambda) list;
-    sw_failaction : lambda option}
+    sw_failaction : lambda option;
+    sw_names: switch_names option }
 
 and lambda_event =
   { lev_loc: Location.t;
