@@ -127,6 +127,7 @@ type primitive =
   | Parraysets of array_kind
   (* Test if the argument is a block or an immediate integer *)
   | Pisint
+  | Pisstring
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
   (* Bitvect operations *)

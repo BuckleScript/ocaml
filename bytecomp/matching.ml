@@ -2529,7 +2529,7 @@ let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
                   hs (Lswitch (arg,sw))
               | Some act ->
                   Lifthenelse
-                    (Lprim (Pisint, [arg], loc),
+                    (Lprim ((if !Clflags.bs_only then Pisstring else Pisint), [arg], loc),
                      call_switcher
                        None arg
                        0 (n-1) consts sw_names,
