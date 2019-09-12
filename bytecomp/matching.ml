@@ -2518,8 +2518,12 @@ let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
               in 
                 Lifthenelse(arg, act2, act1)
           | (2,0, [(i1,act1); (_,act2)],[]) ->
-            if i1 = 0 then Lifthenelse(cmp_name arg, act2, act1)
-            else Lifthenelse (cmp_name arg, act1, act2)
+            let arg =
+              if cstr.cstr_name = "true" || cstr.cstr_name = "false"
+              then arg
+              else cmp_name arg in
+            if i1 = 0 then Lifthenelse(arg, act2, act1)
+            else Lifthenelse (arg, act1, act2)
           | (n,_,_,[]) when not !Clflags.bs_only ->
               call_switcher None arg 0 (n-1) consts sw_names
           | (n, _, _, _) ->
