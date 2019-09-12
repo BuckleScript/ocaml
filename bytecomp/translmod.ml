@@ -238,9 +238,12 @@ let init_shape modl =
       Mty_ident _ ->
         raise Not_found
     | Mty_alias _ ->
-        Const_block (1, Lambda.default_tag_info, [Const_pointer (0, Lambda.Pt_module_alias)])
+        let tag_info = Lambda.Blk_constructor ("Value", 2) in
+        Const_block (1, tag_info, [Const_pointer (0, Lambda.Pt_module_alias)])
     | Mty_signature sg ->
-        Const_block(0,  Lambda.default_tag_info, [Const_block(0, Lambda.default_tag_info, init_shape_struct env sg)])
+        (* Lambda.Blk_constructor (cstr.cstr_name, cstr.cstr_nonconsts) *)
+        let tag_info = Lambda.Blk_constructor ("Module", 2) in
+        Const_block(0,  tag_info, [Const_block(0, Lambda.default_tag_info, init_shape_struct env sg)])
     | Mty_functor(id, arg, res) ->
         raise Not_found (* can we do better? *)
   and init_shape_struct env sg =
@@ -250,9 +253,9 @@ let init_shape modl =
         let init_v =
           match Ctype.expand_head env vdesc.val_type with
             {desc = Tarrow(_,_,_,_)} ->
-              Const_pointer (0,Lambda.default_pointer_info) (* camlinternalMod.Function *)
+              Const_pointer (0, Lambda.Pt_constructor "Function") (* camlinternalMod.Function *)
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
-              Const_pointer (1, Lambda.default_pointer_info) (* camlinternalMod.Lazy *)
+              Const_pointer (1, Lambda.Pt_constructor "Lazy") (* camlinternalMod.Lazy *)
           | _ -> raise Not_found in
         (add_name init_v id) :: init_shape_struct env rem
     | Sig_type(id, tdecl, _) :: rem ->
@@ -265,7 +268,7 @@ let init_shape modl =
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class(id, cdecl, _) :: rem ->
-        (add_name (Const_pointer (2, Lambda.default_pointer_info)) id) (* camlinternalMod.Class *)
+        (add_name (Const_pointer (2, Lambda.Pt_constructor "Class")) id) (* camlinternalMod.Class *)
         :: init_shape_struct env rem
     | Sig_class_type(id, ctyp, _) :: rem ->
         init_shape_struct env rem
