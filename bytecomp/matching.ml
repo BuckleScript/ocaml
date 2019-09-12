@@ -2500,6 +2500,13 @@ let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
       match same_actions tag_lambda_list with
       | Some act -> act
       | _ ->
+          let cmp_name arg =
+            if !Clflags.bs_only then
+              match sw_names with
+                | None -> arg
+                | Some {consts} ->
+                  Lprim(Pintcomp Cneq, [arg; Lconst(Const_base(Const_string (consts.(0), None)))], loc)
+            else arg in
           match
             (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts)
           with
@@ -2507,17 +2514,24 @@ let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
               let arg = 
                 if !Clflags.bs_only && Datarepr.constructor_has_optional_shape cstr then
                   Lprim(is_none_bs_primitve , [arg], loc)
-                else arg
+                else cmp_name arg
               in 
                 Lifthenelse(arg, act2, act1)
           | (2,0, [(i1,act1); (_,act2)],[]) ->
-            if i1 = 0 then Lifthenelse(arg, act2, act1)
-            else Lifthenelse (arg,act1,act2)
-          | (n,_,_,[])  ->
+            if i1 = 0 then Lifthenelse(cmp_name arg, act2, act1)
+            else Lifthenelse (cmp_name arg, act1, act2)
+          | (n,_,_,[]) when not !Clflags.bs_only ->
               call_switcher None arg 0 (n-1) consts sw_names
           | (n, _, _, _) ->
               match same_actions nonconsts with
-              | None ->
+              | Some act when not !Clflags.bs_only ->
+                  Lifthenelse
+                    (Lprim (Pisint, [arg], loc),
+                     call_switcher
+                       None arg
+                       0 (n-1) consts sw_names,
+                     act)
+              | _ ->
 (* Emit a switch, as bytecode implements this sophisticated instruction *)
                   let sw =
                     {sw_numconsts = cstr.cstr_consts; sw_consts = consts;
@@ -2527,13 +2541,7 @@ let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
                   let hs,sw = share_actions_sw sw in
                   let sw = reintroduce_fail sw in
                   hs (Lswitch (arg,sw))
-              | Some act ->
-                  Lifthenelse
-                    (Lprim ((if !Clflags.bs_only then Pisstring else Pisint), [arg], loc),
-                     call_switcher
-                       None arg
-                       0 (n-1) consts sw_names,
-                     act) in
+                     in
     lambda1, jumps_union local_jumps total1
   end
 
