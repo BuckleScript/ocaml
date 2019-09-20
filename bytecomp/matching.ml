@@ -1284,11 +1284,11 @@ let divide_constant ctx m =
 (* Matching against a constructor *)
 
 
-let make_field_args loc binding_kind arg first_pos last_pos argl =
+let make_field_args block loc binding_kind arg first_pos last_pos argl =
   let rec make_args pos =
     if pos > last_pos
     then argl
-    else (Lprim(Pfield (pos, Fld_na (* TODO*) ), [arg],loc), binding_kind) :: make_args (pos + 1)
+    else (Lprim(Pfield (pos, if block then Fld_arg pos else Fld_na), [arg],loc), binding_kind) :: make_args (pos + 1)
   in make_args first_pos
 
 let get_key_constr = function
@@ -1406,9 +1406,9 @@ let make_constr_matching p def ctx = function
             end
         | Cstr_constant _
         | Cstr_block _ ->
-            make_field_args p.pat_loc Alias arg 0 (cstr.cstr_arity - 1) argl
+            make_field_args true p.pat_loc Alias arg 0 (cstr.cstr_arity - 1) argl
         | Cstr_extension _ ->
-            make_field_args p.pat_loc Alias arg 1 cstr.cstr_arity argl in
+            make_field_args false p.pat_loc Alias arg 1 cstr.cstr_arity argl in
       {pm=
         {cases = []; args = newargs;
           default = make_default (matcher_constr cstr) def} ;
