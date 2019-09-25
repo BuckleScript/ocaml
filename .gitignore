@@ -412,3 +412,6 @@ _ocamltest
 /bin/
 lib/ocaml/
 man/
+
+_esy
+esy.lock
