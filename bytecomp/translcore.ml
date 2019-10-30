@@ -286,7 +286,6 @@ let primitives_table = create_hashtable 57 [
   "%field0", Pfield (0, Fld_na);
   "%field1", Pfield (1, Fld_na);
   "%setfield0", Psetfield(0, Pointer, Assignment, Fld_set_na);
-  "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable, None);
   "%makemutable", Pmakeblock(0, Lambda.ref_tag_info, Mutable, None);
   "%raise", Praise Raise_regular;
   "%reraise", Praise Raise_reraise;
@@ -776,7 +775,7 @@ let assert_failed exp =
   in   
 #end     
   Lprim(Praise Raise_regular, [event_after exp
-    (Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None),
+    (Lprim(Pmakeblock(0, Lambda.Blk_extension, Immutable, None),
           [transl_normal_path Predef.path_assert_failure;
            Lconst(Const_block(0, Lambda.Blk_tuple,
               [Const_base(Const_string (fname, None));
@@ -927,7 +926,7 @@ and transl_exp0 e =
           lam_of_loc kind e.exp_loc
         | (Ploc kind, [arg1]) ->
           let lam = lam_of_loc kind arg1.exp_loc in
-          Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None), lam :: argl, e.exp_loc)
+          Lprim(Pmakeblock(0, Blk_tuple, Immutable, None), lam :: argl, e.exp_loc)
         | (Ploc _, _) -> assert false
         | (_, _) ->
             begin match (prim, argl) with
@@ -1006,7 +1005,7 @@ and transl_exp0 e =
           if is_const then
             transl_extension_path e.exp_env path
           else
-            Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, Some (Pgenval :: shape)),
+            Lprim(Pmakeblock(0, Blk_extension, Immutable, Some (Pgenval :: shape)),
                   transl_extension_path e.exp_env path :: ll, e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->

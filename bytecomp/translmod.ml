@@ -229,7 +229,7 @@ let undefined_location loc =
 #if true then  
   let fname = Filename.basename fname in
 #end
-  Lconst(Const_block(0, Lambda.default_tag_info,
+  Lconst(Const_block(0, Lambda.Blk_tuple,
                      [Const_base(Const_string (fname, None));
                       Const_base(Const_int line);
                       Const_base(Const_int char)]))
@@ -237,16 +237,18 @@ let undefined_location loc =
 let init_shape modl =
   let add_name x id =
     if !Clflags.bs_only then
-      Const_block (0, Lambda.default_tag_info, [x; Const_base (Const_string (Ident.name id, None))])
+      Const_block (0, Blk_tuple, [x; Const_base (Const_string (Ident.name id, None))])
     else x in  
+  let module_tag_info : Lambda.tag_info = Blk_constructor ("Module",2) in 
+  let value_tag_info : Lambda.tag_info = Blk_constructor("value",2) in 
   let rec init_shape_mod env mty =
     match Mtype.scrape env mty with
       Mty_ident _ ->
         raise Not_found
     | Mty_alias _ ->
-        Const_block (1, Lambda.default_tag_info, [Const_pointer (0, Lambda.Pt_module_alias)])
+        Const_block (1, value_tag_info, [Const_pointer (0, Lambda.Pt_module_alias)])
     | Mty_signature sg ->
-        Const_block(0, Lambda.default_tag_info, [Const_block(0, Lambda.default_tag_info, init_shape_struct env sg)])
+        Const_block(0, module_tag_info, [Const_block(0, Blk_array, init_shape_struct env sg)])
     | Mty_functor _ ->
         raise Not_found (* can we do better? *)
   and init_shape_struct env sg =

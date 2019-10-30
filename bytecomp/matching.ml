@@ -2962,7 +2962,7 @@ let partial_function loc () =
     Filename.basename fname
   in   
 #end    
-  Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None),
+  Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Lambda.Blk_extension, Immutable, None),
           [transl_normal_path Predef.path_match_failure;
            Lconst(Const_block(0, Lambda.Blk_tuple,
               [Const_base(Const_string (fname, None));
