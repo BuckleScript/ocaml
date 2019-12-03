@@ -604,7 +604,7 @@ let message = function
   | Bs_derive_warning s ->
       "bs.deriving warning: " ^ s 
   | Bs_fragile_external s ->     
-      s ^ " : the external name is inferred from val name is unsafe from refactoring when changing value name"
+    s ^ " : using an empty string as a shorthand to infer the external's name from the value's name is dangerous when refactoring, and therefore deprecated"
   | Bs_unimplemented_primitive s -> 
       "Unimplemented primitive used:" ^ s
   | Bs_integer_literal_overflow -> 
