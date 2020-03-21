@@ -4924,16 +4924,21 @@ let report_error env ppf = function
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
         (Ident.name id);
       spellcheck_idents ppf id valid_idents
-  | Expr_type_clash [ 
-    _, {desc = Tarrow _};
-    _, {desc = Tconstr (Pdot (Pdot(Pident {name = "Js"},"Fn",_),_,_),_,_)}
-    ] -> 
+  | Expr_type_clash ( 
+    (_, {desc = Tarrow _}) ::
+    (_, {desc = Tconstr (Pdot (Pdot(Pident {name = "Js"},"Fn",_),_,_),_,_)}) :: _
+   ) -> 
       fprintf ppf "This function is a curried function where an uncurried function is expected"    
-  | Expr_type_clash [ 
-      _, {desc = Tconstr (Pdot (Pdot(Pident {name = "Js"},"Fn",_),a,_),_,_)};
-      _, {desc = Tconstr (Pdot (Pdot(Pident {name = "Js"},"Fn",_),b,_),_,_)}
-    ] when a <> b -> 
+  | Expr_type_clash (
+      (_, {desc = Tconstr (Pdot (Pdot(Pident {name = "Js"},"Fn",_),a,_),_,_)}) ::
+      (_, {desc = Tconstr (Pdot (Pdot(Pident {name = "Js"},"Fn",_),b,_),_,_)}) :: _
+   ) when a <> b -> 
       fprintf ppf "This function has %s but was expected %s" a b 
+  | Expr_type_clash ( 
+      (_, {desc = Tconstr (Pdot (Pdot(Pident {name = "Js_OO"},"Meth",_),a,_),_,_)}) ::
+      (_, {desc = Tconstr (Pdot (Pdot(Pident {name = "Js_OO"},"Meth",_),b,_),_,_)}) :: _
+   ) when a <> b -> 
+      fprintf ppf "This method has %s but was expected %s" a b 
 
   | Expr_type_clash trace ->
       report_unification_error ppf env trace
@@ -5085,7 +5090,7 @@ let report_error env ppf = function
   | Not_a_variant_type lid ->
       fprintf ppf "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->
-      fprintf ppf "This function is applied to arguments@ ";
+      fprintf ppf "This labeled function is applied to arguments@ ";
       fprintf ppf "in an order different from other calls.@ ";
       fprintf ppf "This is only allowed when the real type is known."
   | Less_general (kind, trace) ->
