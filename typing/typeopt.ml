@@ -51,22 +51,28 @@ let cannot_inhabit_none_like_value (typ : Types.type_expr) (env : Env.t) =
          int, char, float, bool, unit, exn, array, list, nativeint,
          int32, int64, lazy_t, bytes
       *)
-      if Predef.type_is_builtin_path_but_option p then true
-      else
+      (match Predef.type_is_builtin_path_but_option p with
+      | For_sure_yes ->  true
+      | For_sure_no -> false
+      | NA -> 
+      
         begin match (Env.find_type p env).type_kind with
         | exception _ -> 
             false
         | Types.Type_abstract | Types.Type_open -> false
         | Types.Type_record _ -> true
-        | Types.Type_variant
-            ([{cd_id = {Ident.name="None"}; cd_args = Types.Cstr_tuple [] };
-             {cd_id = {Ident.name = "Some"}; cd_args = Types.Cstr_tuple [_]}]
-            |
-             [{cd_id = {Ident.name="Some"}; cd_args = Types.Cstr_tuple [_] };
-              {cd_id = {Ident.name = "None"}; cd_args = Types.Cstr_tuple []}]
-            ) -> false (* conservative *)
-        | Types.Type_variant _ -> true
-        end
+        | (Types.Type_variant
+             ([{cd_id = {Ident.name="None"}; cd_args = Types.Cstr_tuple [] };
+               {cd_id = {Ident.name = "Some"}; cd_args = Types.Cstr_tuple [_]}]
+             |
+              [{cd_id = {Ident.name="Some"}; cd_args = Types.Cstr_tuple [_] };
+               {cd_id = {Ident.name = "None"}; cd_args = Types.Cstr_tuple []}]
+             | [{cd_id={Ident.name = "()"}; cd_args = Types.Cstr_tuple []}]               
+             ))
+        (* | Types.Type_variant  *)
+             -> false (* conservative *)
+        | _ -> true
+        end)
   | Ttuple _
   | Tvariant _
   | Tpackage _ 

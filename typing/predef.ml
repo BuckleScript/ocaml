@@ -47,13 +47,24 @@ and ident_string = ident_create "string"
 and ident_extension_constructor = ident_create "extension_constructor"
 and ident_floatarray = ident_create "floatarray"
 
-let type_is_builtin_path_but_option (p : Path.t) =
+type test =
+  | For_sure_yes
+  | For_sure_no 
+  | NA
+
+let type_is_builtin_path_but_option (p : Path.t) : test  =
   match p with
   | Pident {Ident.stamp} ->
-      stamp >= ident_int.Ident.stamp
-      && stamp  <= ident_floatarray.Ident.stamp
-      && (stamp <> ident_option.Ident.stamp)
-  | _ -> false
+      if 
+        stamp >= ident_int.Ident.stamp
+        && stamp  <= ident_floatarray.Ident.stamp    
+      then    
+        if  (stamp = ident_option.Ident.stamp)
+         || (stamp = ident_unit.Ident.stamp) then 
+          For_sure_no
+        else For_sure_yes
+      else NA 
+  | _ -> NA
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
