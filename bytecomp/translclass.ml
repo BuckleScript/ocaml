@@ -114,10 +114,9 @@ let create_object cl obj init =
   end
 
 let name_pattern default p =
-  match p.pat_desc with
-  | Tpat_var (id, _) -> id
-  | Tpat_alias(_, id, _) -> id
-  | _ -> Ident.create default
+  match Typecore.id_of_pattern p with
+  | Some id -> id
+  | None -> Ident.create default
 
 let normalize_cl_path cl path =
   Env.normalize_path (Some cl.cl_loc) cl.cl_env path

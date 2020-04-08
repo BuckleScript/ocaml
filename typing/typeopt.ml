@@ -62,12 +62,12 @@ let cannot_inhabit_none_like_value (typ : Types.type_expr) (env : Env.t) =
         | Types.Type_abstract | Types.Type_open -> false
         | Types.Type_record _ -> true
         | (Types.Type_variant
-             ([{cd_id = {Ident.name="None"}; cd_args = Types.Cstr_tuple [] };
-               {cd_id = {Ident.name = "Some"}; cd_args = Types.Cstr_tuple [_]}]
+             ([{cd_id = {name="None"}; cd_args = Cstr_tuple [] };
+               {cd_id = {name = "Some"}; cd_args = Cstr_tuple [_]}]
              |
-              [{cd_id = {Ident.name="Some"}; cd_args = Types.Cstr_tuple [_] };
-               {cd_id = {Ident.name = "None"}; cd_args = Types.Cstr_tuple []}]
-             | [{cd_id={Ident.name = "()"}; cd_args = Types.Cstr_tuple []}]               
+              [{cd_id = {name="Some"}; cd_args = Cstr_tuple [_] };
+               {cd_id = {name = "None"}; cd_args = Cstr_tuple []}]
+             | [{cd_id= {name = "()"}; cd_args = Cstr_tuple []}]               
              ))
         (* | Types.Type_variant  *)
              -> false (* conservative *)
