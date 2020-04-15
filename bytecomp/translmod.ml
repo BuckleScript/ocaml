@@ -239,8 +239,8 @@ let init_shape modl =
     if !Config.bs_only then
       Const_block (0, Blk_tuple, [x; Const_base (Const_string (Ident.name id, None))])
     else x in  
-  let module_tag_info : Lambda.tag_info = Blk_constructor ("Module",2) in 
-  let value_tag_info : Lambda.tag_info = Blk_constructor("value",2) in 
+  let module_tag_info : Lambda.tag_info = Blk_constructor {name =  "Module"; num_nonconst = 2} in 
+  let value_tag_info : Lambda.tag_info = Blk_constructor { name = "value"; num_nonconst = 2} in 
   let rec init_shape_mod env mty =
     match Mtype.scrape env mty with
       Mty_ident _ ->
