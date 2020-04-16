@@ -1249,11 +1249,11 @@ let divide_constant ctx m =
 (* Matching against a constructor *)
 
 
-let make_field_args loc binding_kind arg first_pos last_pos argl =
+let make_field_args ~fld_info loc binding_kind arg first_pos last_pos argl =
   let rec make_args pos =
     if pos > last_pos
     then argl
-    else (Lprim(Pfield (pos, Fld_na), [arg], loc), binding_kind) :: make_args (pos + 1)
+    else (Lprim(Pfield (pos, fld_info), [arg], loc), binding_kind) :: make_args (pos + 1)
   in make_args first_pos
 
 let get_key_constr = function
@@ -1352,9 +1352,12 @@ let make_constr_matching p def ctx = function
         | Cstr_constant _
         | Cstr_block _ ->
             make_field_args p.pat_loc Alias arg 0 (cstr.cstr_arity - 1) argl
+            ~fld_info:Fld_variant
         | Cstr_unboxed -> (arg, Alias) :: argl
         | Cstr_extension _ ->
-            make_field_args p.pat_loc Alias arg 1 cstr.cstr_arity argl in
+            make_field_args p.pat_loc Alias arg 1 cstr.cstr_arity argl 
+            ~fld_info:Fld_extension
+        in
       {pm=
         {cases = []; args = newargs;
           default = make_default (matcher_constr cstr) def} ;
@@ -1522,7 +1525,7 @@ let inline_lazy_force_cond arg loc =
               Lprim(Pintcomp Ceq,
                     [Lvar tag; Lconst(Const_base(Const_int Obj.forward_tag))],
                     loc),
-              Lprim(Pfield (0, Fld_na), [varg], loc), (*TODO: lazy field *)
+              Lprim(Pfield (0, Lambda.fld_na), [varg], loc), (*TODO: lazy field *)
               Lifthenelse(
                 (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 Lprim(Pintcomp Ceq,
@@ -1549,7 +1552,7 @@ let inline_lazy_force_switch arg loc =
              { sw_numconsts = 0; sw_consts = [];
                sw_numblocks = 256;  (* PR#6033 - tag ranges from 0 to 255 *)
                sw_blocks =
-                 [ (Obj.forward_tag, Lprim(Pfield (0, Fld_na) (* TODO: lazy*), [varg], loc));
+                 [ (Obj.forward_tag, Lprim(Pfield (0, Lambda.fld_na) (* TODO: lazy*), [varg], loc));
                    (Obj.lazy_tag,
                     Lapply{ap_should_be_tailcall=false;
                            ap_loc=loc;

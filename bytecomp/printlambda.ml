@@ -133,11 +133,13 @@ let str_of_field_info (fld_info : Lambda.field_dbg_info)=
   match fld_info with 
   | (Fld_module {name } | Fld_record {name} | Fld_record_inline {name} | Fld_record_extension {name})
     -> name
-  | Fld_na  -> "na"
+  | Fld_na s  -> if s = "" then "na" else ""
   | Fld_tuple -> "[]"
   | Fld_poly_var_tag->"`"
   | Fld_poly_var_content -> "#"
-  | Fld_extension_slot -> "ext"
+  | Fld_extension_slot -> "ext_slot"
+  | Fld_extension -> "ext"
+  | Fld_variant -> "var"
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pbytes_to_string -> fprintf ppf "bytes_to_string"

@@ -43,7 +43,7 @@ let rec split_list n l =
 let rec build_closure_env env_param pos = function
     [] -> Tbl.empty
   | id :: rem ->
-      Tbl.add id (Uprim(Pfield (pos, Fld_na), [Uvar env_param], Debuginfo.none))
+      Tbl.add id (Uprim(Pfield (pos, Lambda.fld_na), [Uvar env_param], Debuginfo.none))
               (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
@@ -765,7 +765,7 @@ let check_constant_result lam ulam approx =
           let glb =
             Uprim(Pgetglobal (Ident.create_persistent id), [], Debuginfo.none)
           in
-          Uprim(Pfield (i,Fld_na), [glb], Debuginfo.none), approx
+          Uprim(Pfield (i,Lambda.fld_na), [glb], Debuginfo.none), approx
       end
   | _ -> (ulam, approx)
 

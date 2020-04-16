@@ -283,9 +283,9 @@ let primitives_table = create_hashtable 57 [
   "%loc_LINE", Ploc Loc_LINE;
   "%loc_POS", Ploc Loc_POS;
   "%loc_MODULE", Ploc Loc_MODULE;
-  "%field0", Pfield (0, Fld_na);
+  "%field0", Pfield (0, Lambda.fld_na);
   "%bs_ref_field0", Pfield(0, Lambda.ref_field_info);
-  "%field1", Pfield (1, Fld_na);
+  "%field1", Pfield (1, Lambda.fld_na);
   "%setfield0", Psetfield(0, Pointer, Assignment, Fld_set_na);
   "%bs_ref_setfield0", Psetfield(0, Pointer, Assignment, Lambda.ref_field_set_info);
   "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable, None);

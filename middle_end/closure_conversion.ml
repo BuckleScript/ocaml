@@ -91,7 +91,7 @@ let tupled_function_call_stub original_params unboxed_version
   let _, body =
     List.fold_left (fun (pos, body) param ->
         let lam : Flambda.named =
-          Prim (Pfield (pos, Fld_na), [tuple_param_var], Debuginfo.none)
+          Prim (Pfield (pos, Lambda.fld_na), [tuple_param_var], Debuginfo.none)
         in
         pos + 1, Flambda.create_let param lam body)
       (0, call) params
@@ -673,9 +673,9 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
       Flambda.create_let
         sym_v (Symbol block_symbol)
          (Flambda.create_let result_v
-            (Prim (Pfield (0, Fld_na), [sym_v], Debuginfo.none))
+            (Prim (Pfield (0, Lambda.fld_na), [sym_v], Debuginfo.none))
             (Flambda.create_let value_v
-              (Prim (Pfield (pos, Fld_na), [result_v], Debuginfo.none))
+              (Prim (Pfield (pos, Lambda.fld_na), [result_v], Debuginfo.none))
               (Var value_v))))
   in
   let module_initializer : Flambda.program_body =
