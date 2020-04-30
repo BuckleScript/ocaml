@@ -2330,7 +2330,10 @@ let split_extension_cases tag_lambda_list =
         | _ -> assert false in
   split_rec tag_lambda_list
 
-
+let extension_slot_eq : Primitive.description = 
+    Primitive.simple ~name:"#extension_slot_eq" ~arity:2 ~alloc:false
+let extension_slot_eq () = 
+  if !Config.bs_only then Pccall extension_slot_eq else Pintcomp Ceq
 let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
@@ -2357,17 +2360,20 @@ let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
               List.fold_right
                 (fun (path, act) rem ->
                    let ext = transl_extension_path ex_pat.pat_env path in
-                   Lifthenelse(Lprim(Pintcomp Ceq, [Lvar tag; ext], loc),
+                   Lifthenelse(Lprim(extension_slot_eq (), [Lvar tag; ext], loc),
                                act, rem))
                 nonconsts
                 default
             in
-              Llet(Alias, Pgenval,tag, Lprim(Pfield (0, Fld_extension_slot), [arg], loc), tests)
+              if !Config.bs_only then 
+              Llet(Alias, Pgenval,tag,  arg, tests)
+              else 
+              Llet(Alias, Pgenval,tag, Lprim(Pfield (0, Lambda.fld_na), [arg], loc), tests)
       in
         List.fold_right
           (fun (path, act) rem ->
              let ext = transl_extension_path ex_pat.pat_env path in
-             Lifthenelse(Lprim(Pintcomp Ceq, [arg; ext], loc),
+             Lifthenelse(Lprim(extension_slot_eq (), [arg; ext], loc),
                          act, rem))
           consts
           nonconst_lambda
