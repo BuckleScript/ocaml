@@ -1007,7 +1007,7 @@ and transl_exp0 e =
             Lprim(Pmakeblock(n, tag_info, Immutable, Some shape), ll, e.exp_loc)
           end
       | Cstr_extension(path, is_const) ->
-          if is_const then
+          if not !Config.bs_only && is_const then
             transl_extension_path e.exp_env path
           else
             Lprim(Pmakeblock(0, Blk_extension, Immutable, Some (Pgenval :: shape)),

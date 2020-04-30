@@ -2325,8 +2325,8 @@ let split_extension_cases tag_lambda_list =
     | (cstr, act) :: rem ->
         let (consts, nonconsts) = split_rec rem in
         match cstr with
-          Cstr_extension(path, true) -> ((path, act) :: consts, nonconsts)
-        | Cstr_extension(path, false) -> (consts, (path, act) :: nonconsts)
+          Cstr_extension(path, true) when not !Config.bs_only -> ((path, act) :: consts, nonconsts)
+        | Cstr_extension(path, _) -> (consts, (path, act) :: nonconsts)
         | _ -> assert false in
   split_rec tag_lambda_list
 
