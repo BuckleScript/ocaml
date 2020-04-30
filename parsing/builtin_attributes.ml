@@ -110,8 +110,8 @@ let check_bs_attributes_inclusion =
       None
     )  
 
-let check_duplicated_labels = ref (fun _lbls -> 
-  failwith "check_duplicated_label not implemented"
+let check_duplicated_labels : (_ -> _ option ) ref = ref (fun _lbls -> 
+  None
 )
 
 let rec deprecated_of_sig = function
