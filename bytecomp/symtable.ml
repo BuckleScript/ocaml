@@ -139,7 +139,7 @@ let init () =
         try List.assoc name Predef.builtin_values
         with Not_found -> fatal_error "Symtable.init" in
       let c = slot_for_setglobal id in
-      let cst = Const_block(Obj.object_tag, Lambda.default_tag_info,
+      let cst = Const_block(Obj.object_tag, Lambda.default_tag_info (*IIRELEVANT*),
                             [Const_base(Const_string (name, None));
                              Const_base(Const_int (-i-1))
                             ])

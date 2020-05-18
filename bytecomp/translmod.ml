@@ -928,7 +928,7 @@ let transl_store_structure glob map prims str =
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
                            subst_lambda subst
-                             (Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None),
+                             (Lprim(Pmakeblock(0, Lambda.default_tag_info (*IIRELEVANT*), Immutable, None),
                                     List.map (fun id -> Lvar id)
                                       (defined_idents str.str_items), loc)),
                            Lsequence(store_ident loc id,
@@ -956,7 +956,7 @@ let transl_store_structure glob map prims str =
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
                            subst_lambda subst
-                             (Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None),
+                             (Lprim(Pmakeblock(0, Lambda.default_tag_info (*IIRELEVANT*), Immutable, None),
                                     List.map field map, loc)),
                            Lsequence(store_ident loc id,
                                      transl_store rootpath
@@ -1303,13 +1303,13 @@ let transl_package_flambda component_names coercion =
   in
   size,
   apply_coercion Location.none Strict coercion
-    (Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None), (*NOTE: not relevant in flambda *)
+    (Lprim(Pmakeblock(0, Lambda.default_tag_info (*IIRELEVANT*), Immutable, None), (*NOTE: not relevant in flambda *)
            List.map get_component component_names,
            Location.none))
 
 let transl_package component_names target_name coercion =
   let components =
-    Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None),
+    Lprim(Pmakeblock(0, Lambda.default_tag_info (*IIRELEVANT*), Immutable, None),
           List.map get_component component_names, Location.none) in
   Lprim(Psetglobal target_name,
         [apply_coercion Location.none Strict coercion components],
@@ -1347,7 +1347,7 @@ let transl_store_package component_names target_name coercion =
          0 component_names)
   | Tcoerce_structure (pos_cc_list, _id_pos_list, _) ->
       let components =
-        Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None),
+        Lprim(Pmakeblock(0, Lambda.default_tag_info (*IIRELEVANT*), Immutable, None),
               List.map get_component component_names,
               Location.none)
       in
