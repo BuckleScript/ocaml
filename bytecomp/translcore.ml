@@ -286,13 +286,20 @@ create_hashtable 57 [
   "%loc_LINE", Ploc Loc_LINE;
   "%loc_POS", Ploc Loc_POS;
   "%loc_MODULE", Ploc Loc_MODULE;
-  "%field0", Pfield (0, Lambda.fld_na);
-  "%bs_ref_field0", Pfield(0, Lambda.ref_field_info);
-  "%field1", Pfield (1, Lambda.fld_na);
-  "%setfield0", Psetfield(0, Pointer, Assignment, Fld_set_na);
+  (* BEGIN Triples for  ref data type *)
   "%bs_ref_setfield0", Psetfield(0, Pointer, Assignment, Lambda.ref_field_set_info);
-  "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable, None);
+  "%bs_ref_field0", Pfield(0, Lambda.ref_field_info);
   "%makemutable", Pmakeblock(0, Lambda.ref_tag_info, Mutable, None);
+  "%incr", Poffsetref(1);
+  "%decr", Poffsetref(-1);
+  (* Finish Triples for  ref data type *)
+
+  "%field0", Pfield (0, Lambda.fld_na);  
+  "%field1", Pfield (1, Lambda.fld_na);
+  "%obj_size", Parraylength Pgenarray;
+  "%obj_field", Parrayrefu Pgenarray;
+  "%obj_set_field", Parraysetu Pgenarray;
+  "%obj_is_int", Pisint;
   "%raise", Praise Raise_regular;
   "%reraise", Praise Raise_reraise;
   "%raise_notrace", Praise Raise_notrace;
@@ -327,8 +334,6 @@ create_hashtable 57 [
   "%leint", Pintcomp Cle;
   "%gtint", Pintcomp Cgt;
   "%geint", Pintcomp Cge;
-  "%incr", Poffsetref(1);
-  "%decr", Poffsetref(-1);
   "%intoffloat", Pintoffloat;
   "%floatofint", Pfloatofint;
   "%negfloat", Pnegfloat;
@@ -345,9 +350,7 @@ create_hashtable 57 [
   "%gefloat", Pfloatcomp Cge;
   "%string_length", Pstringlength;
   "%string_safe_get", Pstringrefs;
-  "%string_safe_set", Pbytessets;
   "%string_unsafe_get", Pstringrefu;
-  "%string_unsafe_set", Pbytessetu;
   "%bytes_length", Pbyteslength;
   "%bytes_safe_get", Pbytesrefs;
   "%bytes_safe_set", Pbytessets;
@@ -358,15 +361,11 @@ create_hashtable 57 [
   "%array_safe_set", Parraysets Pgenarray;
   "%array_unsafe_get", Parrayrefu Pgenarray;
   "%array_unsafe_set", Parraysetu Pgenarray;
-  "%obj_size", Parraylength Pgenarray;
-  "%obj_field", Parrayrefu Pgenarray;
-  "%obj_set_field", Parraysetu Pgenarray;
   "%floatarray_length", Parraylength Pfloatarray;
   "%floatarray_safe_get", Parrayrefs Pfloatarray;
   "%floatarray_safe_set", Parraysets Pfloatarray;
   "%floatarray_unsafe_get", Parrayrefu Pfloatarray;
   "%floatarray_unsafe_set", Parraysetu Pfloatarray;
-  "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
   "%nativeint_of_int", Pbintofint Pnativeint;
   "%nativeint_to_int", Pintofbint Pnativeint;
@@ -435,7 +434,7 @@ else create_hashtable 57 [
   "%field1", Pfield (1, Lambda.fld_na);
   "%setfield0", Psetfield(0, Pointer, Assignment, Fld_set_na);
   "%bs_ref_setfield0", Psetfield(0, Pointer, Assignment, Lambda.ref_field_set_info);
-  "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable, None);
+  "%makeblock", Pmakeblock(0, Lambda.default_tag_info (*IRRELEVANT*), Immutable, None);
   "%makemutable", Pmakeblock(0, Lambda.ref_tag_info, Mutable, None);
   "%raise", Praise Raise_regular;
   "%reraise", Praise Raise_reraise;
