@@ -233,7 +233,8 @@ let undefined_location loc =
                      [Const_base(Const_string (fname, None));
                       Const_base(Const_int line);
                       Const_base(Const_int char)]))
-let cstrs = (3,2) 
+let cstr_const = 3  
+let cstr_non_const = 2
 let init_shape modl =
   let add_name x id =
     if !Config.bs_only then
@@ -258,9 +259,9 @@ let init_shape modl =
         let init_v =
           match Ctype.expand_head env ty with
             {desc = Tarrow(_,_,_,_)} ->
-              Const_pointer (0, Pt_constructor{name = "Function"; cstrs})
+              Const_pointer (0, Pt_constructor{name = "Function"; const = cstr_const; non_const = cstr_non_const})
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
-              Const_pointer (1, Pt_constructor{name = "Lazy"; cstrs}) 
+              Const_pointer (1, Pt_constructor{name = "Lazy"; const = cstr_const; non_const = cstr_non_const}) 
           | _ -> raise Not_found in
         (add_name init_v id) :: init_shape_struct env rem
     | Sig_value(_, {val_kind=Val_prim _}) :: rem ->
@@ -278,7 +279,7 @@ let init_shape modl =
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class (id,_,_) :: rem ->
-        (add_name (Const_pointer (2, Pt_constructor{name = "Class";cstrs})) id)
+        (add_name (Const_pointer (2, Pt_constructor{name = "Class";const = cstr_const; non_const = cstr_non_const})) id)
         :: init_shape_struct env rem
     | Sig_class_type _ :: rem ->
         init_shape_struct env rem

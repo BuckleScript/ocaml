@@ -252,11 +252,12 @@ and raise_kind =
   | Raise_notrace
 
 type pointer_info = 
-  | Pt_constructor of {name : string; cstrs : int * int }
+  | Pt_constructor of {name : string; const : int ; non_const : int }
   | Pt_variant of {name : string}
   | Pt_module_alias 
   | Pt_builtin_boolean  
   | Pt_shape_none   
+  | Pt_assertfalse
   | Pt_na 
 
   
@@ -366,9 +367,9 @@ type program =
     not necessary "()", it can be used as a place holder for module 
     alias etc.
 *)
-let const_unit = Const_pointer(0, Pt_constructor{name = "()"; cstrs = 1, 0})
+let const_unit = Const_pointer(0, Pt_constructor{name = "()"; const = 1; non_const = 0})
 
-let lambda_assert_false = Lconst (Const_pointer(0, Pt_constructor {name = "assert false"; cstrs = (1,0)}))  
+let lambda_assert_false = Lconst (Const_pointer(0, Pt_assertfalse))  
 
 let lambda_module_alias = Lconst (Const_pointer(0, Pt_module_alias)) 
 
