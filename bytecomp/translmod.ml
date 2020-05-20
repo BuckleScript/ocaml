@@ -1040,7 +1040,7 @@ let transl_store_structure glob map prims str =
             let rec store_idents pos = function
                 [] -> transl_store rootpath (add_idents true ids subst) rem
               | id :: idl ->
-                  Llet(Alias, Pgenval, id, Lprim(Pfield (pos, Lambda.fld_na), [Lvar mid], loc),
+                  Llet(Alias, Pgenval, id, Lprim(Pfield (pos, Lambda.fld_na (*IRRELEVANT*)), [Lvar mid], loc),
                        Lsequence(store_ident loc id,
                                  store_idents (pos + 1) idl))
             in
@@ -1072,7 +1072,7 @@ let transl_store_structure glob map prims str =
       match cc with
         Tcoerce_none ->
           Ident.add id
-            (Lprim(Pfield (pos, Lambda.fld_na),
+            (Lprim(Pfield (pos, Lambda.fld_na (*IRRELEVANT*)),
                    [Lprim(Pgetglobal glob, [], Location.none)],
                    Location.none))
             subst
@@ -1187,7 +1187,7 @@ let toplevel_name id =
 let toploop_getvalue id =
   Lapply{ap_should_be_tailcall=false;
          ap_loc=Location.none;
-         ap_func=Lprim(Pfield (toploop_getvalue_pos, Lambda.fld_na),
+         ap_func=Lprim(Pfield (toploop_getvalue_pos, Lambda.fld_na(*IRRELEVANT*)),
                        [Lprim(Pgetglobal toploop_ident, [], Location.none)],
                        Location.none);
          ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None)))];
@@ -1197,7 +1197,7 @@ let toploop_getvalue id =
 let toploop_setvalue id lam =
   Lapply{ap_should_be_tailcall=false;
          ap_loc=Location.none;
-         ap_func=Lprim(Pfield (toploop_setvalue_pos, Lambda.fld_na),
+         ap_func=Lprim(Pfield (toploop_setvalue_pos, Lambda.fld_na(*IRRELEVANT*)),
                        [Lprim(Pgetglobal toploop_ident, [], Location.none)],
                        Location.none);
          ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None)));
@@ -1266,7 +1266,7 @@ let transl_toplevel_item item =
           lambda_unit
       | id :: ids ->
           Lsequence(toploop_setvalue id
-                      (Lprim(Pfield (pos, Lambda.fld_na), [Lvar mid], Location.none)),
+                      (Lprim(Pfield (pos, Lambda.fld_na (*IRRELEVANT*)), [Lvar mid], Location.none)),
                     set_idents (pos + 1) ids) in
       Llet(Strict, Pgenval, mid,
            transl_module Tcoerce_none None modl, set_idents 0 ids)
@@ -1360,7 +1360,7 @@ let transl_store_package component_names target_name coercion =
                (fun pos _id ->
                  Lprim(Psetfield(pos, Pointer, Root_initialization, Fld_set_na),
                        [Lprim(Pgetglobal target_name, [], Location.none);
-                        Lprim(Pfield (pos, Lambda.fld_na), [Lvar blk], Location.none)],
+                        Lprim(Pfield (pos, Lambda.fld_na (*IRRELEVANT*)), [Lvar blk], Location.none)],
                        Location.none))
                0 pos_cc_list))
   (*

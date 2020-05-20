@@ -1525,7 +1525,7 @@ let inline_lazy_force_cond arg loc =
               Lprim(Pintcomp Ceq,
                     [Lvar tag; Lconst(Const_base(Const_int Obj.forward_tag))],
                     loc),
-              Lprim(Pfield (0, Lambda.fld_na), [varg], loc), (*TODO: lazy field *)
+              Lprim(Pfield (0, Lambda.fld_na (*IRRELEVANT*)), [varg], loc), 
               Lifthenelse(
                 (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 Lprim(Pintcomp Ceq,
@@ -1552,7 +1552,7 @@ let inline_lazy_force_switch arg loc =
              { sw_numconsts = 0; sw_consts = [];
                sw_numblocks = 256;  (* PR#6033 - tag ranges from 0 to 255 *)
                sw_blocks =
-                 [ (Obj.forward_tag, Lprim(Pfield (0, Lambda.fld_na) (* TODO: lazy*), [varg], loc));
+                 [ (Obj.forward_tag, Lprim(Pfield (0, Lambda.fld_na (*IRRELEVANT*)), [varg], loc));
                    (Obj.lazy_tag,
                     Lapply{ap_should_be_tailcall=false;
                            ap_loc=loc;
@@ -2368,7 +2368,7 @@ let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
               if !Config.bs_only then 
               Llet(Alias, Pgenval,tag,  arg, tests)
               else 
-              Llet(Alias, Pgenval,tag, Lprim(Pfield (0, Lambda.fld_na), [arg], loc), tests)
+              Llet(Alias, Pgenval,tag, Lprim(Pfield (0, Lambda.fld_na (*IRRELEVANT*)), [arg], loc), tests)
       in
         List.fold_right
           (fun (path, act) rem ->
