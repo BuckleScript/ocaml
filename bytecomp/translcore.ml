@@ -296,7 +296,6 @@ create_hashtable 57 [
 
   "%field0", Pfield (0, Lambda.fld_na);  
   "%field1", Pfield (1, Lambda.fld_na);
-  "%obj_size", Parraylength Pgenarray;
   "%obj_field", Parrayrefu Pgenarray;
   "%obj_set_field", Parraysetu Pgenarray;
   "%obj_is_int", Pisint;
