@@ -97,6 +97,8 @@ type field_dbg_info =
   | Fld_poly_var_content
   | Fld_extension
   | Fld_variant
+  | Fld_array
+  
 val fld_record :
   (Types.label_description -> 
   field_dbg_info) ref

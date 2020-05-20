@@ -56,7 +56,7 @@ let mkappl (func, args) =
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
 
-let lfield ?(fld_info=Lambda.fld_na) v i = Lprim(Pfield (i, fld_info), [Lvar v], Location.none)
+let lfield ~fld_info v i = Lprim(Pfield (i, fld_info), [Lvar v], Location.none)
 
 let transl_label l = share (Const_immstring l)
 
@@ -236,7 +236,7 @@ let bind_methods tbl meths vals cl_init =
                [Lvar tbl; transl_meth_list (List.map fst methl)] @ names),
        List.fold_right
          (fun (_lab,id) lam -> decr i; Llet(StrictOpt, Pgenval, id,
-                                           lfield ids !i, lam))
+                                           lfield ~fld_info:Fld_array ids !i, lam))
          (methl @ vals) cl_init)
 
 let output_methods tbl methods lam =
@@ -360,20 +360,20 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
             List.fold_left
               (fun init (nm, id, _) ->
                 Llet(StrictOpt, Pgenval, id,
-                     lfield inh (index nm concr_meths + ofs),
+                     lfield inh (index nm concr_meths + ofs) ~fld_info:Fld_array,
                      init))
               cl_init methids in
           let cl_init =
             List.fold_left
               (fun init (nm, id) ->
                 Llet(StrictOpt, Pgenval, id,
-                     lfield inh (index nm vals + 1), init))
+                     lfield inh (index nm vals + 1) ~fld_info:Fld_array, init))
               cl_init valids in
           (inh_init,
            Llet (Strict, Pgenval, inh,
                  mkappl(oo_prim "inherits", narrow_args @
                         [lpath; Lconst(Const_pointer((if top then 1 else 0),Pt_builtin_boolean))]),
-                 Llet(StrictOpt, Pgenval, obj_init, lfield inh 0, cl_init)))
+                 Llet(StrictOpt, Pgenval, obj_init, lfield inh 0 ~fld_info:Fld_array, cl_init)))
       | _ ->
           let core cl_init =
             build_class_init cla true super inh_init cl_init msubst top cl
@@ -661,7 +661,7 @@ let transl_class ids cl_id pub_meths cl vflag =
     let i = ref (i0-1) in
     List.fold_left
       (fun subst id ->
-        incr i; Ident.add id (lfield env !i)  subst)
+        incr i; Ident.add id (lfield env !i ~fld_info:Fld_array)  subst) (* can not be of type {!tables} since it's either of size 0 or 3 *)
       Ident.empty !new_ids'
   in
   let new_ids_meths = ref [] in
@@ -698,9 +698,9 @@ let transl_class ids cl_id pub_meths cl vflag =
     if top then lam else
     (* must be called only once! *)
     let lam = subst_lambda (subst env1 lam 1 new_ids_init) lam in
-    Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0),
+    Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0 ~fld_info:(Fld_na "FLD_NA")),
     Llet(Alias, Pgenval, env1',
-         (if !new_ids_init = [] then Lvar env1 else lfield env1 0),
+         (if !new_ids_init = [] then Lvar env1 else lfield env1 0 ~fld_info:(Fld_na "FLD_NA")),
          lam))
   in
 
