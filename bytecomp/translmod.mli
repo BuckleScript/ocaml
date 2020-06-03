@@ -19,6 +19,10 @@
 open Typedtree
 open Lambda
 
+val eval_rec_bindings:
+      ((Ident.t * (Lambda.lambda * Lambda.lambda) option * Lambda.lambda) list  -> 
+      Lambda.lambda -> Lambda.lambda) ref
+
 val transl_implementation:
       string -> structure * module_coercion -> Lambda.program
 val transl_store_phrases: string -> structure -> int * lambda
