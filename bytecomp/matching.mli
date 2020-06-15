@@ -18,7 +18,31 @@
 open Typedtree
 open Lambda
 
+val call_switcher_variant_constant : 
+  (Location.t ->
+   Lambda.lambda option ->
+   Lambda.lambda ->
+   (int * Lambda.lambda) list -> 
+   Lambda.switch_names option -> 
+   Lambda.lambda)
+    ref
 
+val call_switcher_variant_constr :
+  (Location.t ->
+   Lambda.lambda option ->
+   Lambda.lambda ->
+   (int * Lambda.lambda) list -> 
+   Lambda.switch_names option -> 
+   Lambda.lambda)
+    ref
+
+val make_test_sequence_variant_constant :
+  (Lambda.lambda option -> 
+   Lambda.lambda -> 
+   (int * Lambda.lambda) list -> 
+   Lambda.lambda)
+    ref    
+    
 (* Entry points to match compiler *)
 val for_function:
         Location.t -> int ref option -> lambda -> (pattern * lambda) list ->
