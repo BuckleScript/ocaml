@@ -1427,10 +1427,10 @@ let divide_variant row ctx {cases = cl; args = al; default=def} =
           match pato with
             None ->
               add (make_variant_matching_constant p lab def ctx) variants
-                (=) (Cstr_constant tag) (patl, action) al
+                (=) (lab,Cstr_constant tag) (patl, action) al
           | Some pat ->
               add (make_variant_matching_nonconst p lab def ctx) variants
-                (=) (Cstr_block tag) (pat :: patl, action) al
+                (=) (lab,Cstr_block tag) (pat :: patl, action) al
         end
     | _ -> []
   in
@@ -2318,6 +2318,21 @@ let split_cases tag_lambda_list =
   let const, nonconst = split_rec tag_lambda_list in
   sort_int_lambda_list const,
   sort_int_lambda_list nonconst
+  
+(* refine [split_cases] and [split_variant_cases] *)
+let split_variant_cases tag_lambda_list =
+  let rec split_rec = function
+      [] -> ([], [])
+    | ((name,cstr), act) :: rem ->
+        let (consts, nonconsts) = split_rec rem in
+        match cstr with
+          Cstr_constant n -> ((n, (name, act)) :: consts, nonconsts)
+        | Cstr_block n    -> (consts, (n, (name, act)) :: nonconsts)
+        | Cstr_unboxed    -> assert false
+        | Cstr_extension _ -> assert false in
+  let const, nonconst = split_rec tag_lambda_list in
+  sort_int_lambda_list const,
+  sort_int_lambda_list nonconst  
 
 let split_extension_cases tag_lambda_list =
   let rec split_rec = function
@@ -2445,33 +2460,33 @@ let combine_constructor sw_names loc arg ex_pat cstr partial ctx def
 
 let make_test_sequence_variant_constant fail arg int_lambda_list =
   let _, (cases, actions) =
-    as_interval fail min_int max_int int_lambda_list in
+    as_interval fail min_int max_int (List.map (fun (a,(_,c)) -> (a,c)) int_lambda_list) in
   Switcher.test_sequence arg cases actions
 
 let call_switcher_variant_constant loc fail arg int_lambda_list names =
-  call_switcher loc fail arg min_int max_int int_lambda_list names
+  call_switcher loc fail arg min_int max_int (List.map (fun (a,(_,c)) -> (a,c)) int_lambda_list) names
 
 
 let call_switcher_variant_constr loc fail arg int_lambda_list names =
   let v = Ident.create "variant" in
   Llet(Alias, Pgenval, v, Lprim(Pfield (0, Fld_poly_var_tag), [arg], loc),
        call_switcher loc
-         fail (Lvar v) min_int max_int int_lambda_list names)
+         fail (Lvar v) min_int max_int (List.map (fun (a,(_,c)) -> (a,c)) int_lambda_list) names)
 
 let call_switcher_variant_constant : 
   (Location.t ->
    Lambda.lambda option ->
    Lambda.lambda ->
-   (int * Lambda.lambda) list -> 
+   (int * (string * Lambda.lambda)) list -> 
    Lambda.switch_names option -> 
    Lambda.lambda)
     ref= ref call_switcher_variant_constant
-    
+
 let call_switcher_variant_constr :
   (Location.t ->
    Lambda.lambda option ->
    Lambda.lambda ->
-   (int * Lambda.lambda) list -> 
+   (int * (string * Lambda.lambda)) list -> 
    Lambda.switch_names option -> 
    Lambda.lambda)
     ref
@@ -2480,7 +2495,7 @@ let call_switcher_variant_constr :
 let make_test_sequence_variant_constant :
   (Lambda.lambda option -> 
    Lambda.lambda -> 
-   (int * Lambda.lambda) list -> 
+   (int * (string * Lambda.lambda)) list -> 
    Lambda.lambda)
     ref
   = ref make_test_sequence_variant_constant        
@@ -2509,12 +2524,12 @@ let combine_variant names loc row arg partial ctx def
       None, jumps_empty
     else
       mk_failaction_neg partial ctx def in
-  let (consts, nonconsts) = split_cases tag_lambda_list in
+  let (consts, nonconsts) = split_variant_cases tag_lambda_list in
   let lambda1 = match fail, one_action with
   | None, Some act -> act
   | _,_ ->
       match (consts, nonconsts) with
-      | ([_, act1], [_, act2]) when fail=None ->
+      | ([_, (_,act1)], [_, (_,act2)]) when fail=None ->
           test_int_or_block arg act1 act2
       | (_, []) -> (* One can compare integers and pointers *)
           !make_test_sequence_variant_constant fail arg consts
@@ -2830,9 +2845,7 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         (combine_constant names pat.pat_loc arg cst partial)
         ctx pm
   | Tpat_construct (_, cstr, _) ->
-      let sw_names = if !Config.bs_only
-        then !names_from_construct_pattern pat
-        else None in  
+      let sw_names = !names_from_construct_pattern pat in  
       compile_test
         (compile_match repr partial) partial
         divide_constructor
