@@ -1611,7 +1611,7 @@ let rec is_nonexpansive exp =
         fields
       && is_nonexpansive_opt extended_expression
   | Texp_field(exp, _, _) -> is_nonexpansive exp
-  | Texp_array [] -> true
+  | Texp_array [] -> not !Config.bs_only
   | Texp_ifthenelse(_cond, ifso, ifnot) ->
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_sequence (_e1, e2) -> is_nonexpansive e2  (* PR#4354 *)
