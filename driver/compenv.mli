@@ -51,7 +51,7 @@ val is_unit_name : string -> bool
 (* [check_unit_name ppf filename name] prints a warning in [filename]
    on [ppf] if [name] should not be used as a module name. *)
 val check_unit_name : Format.formatter -> string -> string -> unit
-
+#if undefined BS_ONLY then
 (* Deferred actions of the compiler, while parsing arguments *)
 
 type deferred_action =
@@ -69,6 +69,7 @@ val anonymous : string -> unit
 val impl : string -> unit
 val intf : string -> unit
 
+
 val process_deferred_actions :
   Format.formatter *
   (Format.formatter -> string -> string -> unit) * (* compile implementation *)
@@ -76,3 +77,4 @@ val process_deferred_actions :
   string * (* ocaml module extension *)
   string -> (* ocaml library extension *)
   unit
+#end
