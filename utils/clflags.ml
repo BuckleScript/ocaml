@@ -369,6 +369,7 @@ let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
 
+#if undefined BS_ONLY then
 let arg_spec = ref []
 let arg_names = ref Misc.StringMap.empty
 
@@ -403,6 +404,7 @@ let parse_arguments f msg =
   with
   | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
   | Arg.Help msg -> Printf.printf "%s" msg; exit 0
+#end
 
 #if true then
 type mli_status = Mli_na | Mli_exists | Mli_non_exists
