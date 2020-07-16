@@ -549,7 +549,7 @@ let get_objfiles ~with_ocamlparam =
 
 
 
-
+#if undefined BS_ONLY then
 type deferred_action =
   | ProcessImplementation of string
   | ProcessInterface of string
@@ -645,3 +645,4 @@ let process_deferred_actions env =
     fatal "Option -a cannot be used with .cmxa input files.";
   List.iter (process_action env) (List.rev !deferred_actions);
   output_name := final_output_name;
+#end
