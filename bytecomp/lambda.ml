@@ -403,7 +403,7 @@ let make_key e =
   (* make_key is used for normalizing let-bound variables *)
   let rec tr_rec env e =
     incr count ;
-    if !count > max_raw then raise Not_simple ; (* Too big ! *)
+    if !count > max_raw then raise_notrace Not_simple ; (* Too big ! *)
     match e with
     | Lvar id ->
       begin
@@ -412,7 +412,7 @@ let make_key e =
       end
     | Lconst  (Const_base (Const_string _)) ->
         (* Mutable constants are not shared *)
-        raise Not_simple
+        raise_notrace Not_simple
     | Lconst _ -> e
     | Lapply ap ->
         Lapply {ap with ap_func = tr_rec env ap.ap_func;
@@ -458,7 +458,7 @@ let make_key e =
 (* Beware: (PR#6412) the event argument to Levent
    may include cyclic structure of type Type.typexpr *)
     | Levent _  ->
-        raise Not_simple
+        raise_notrace Not_simple
 
   and tr_recs env es = List.map (tr_rec env) es
 
