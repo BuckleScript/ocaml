@@ -2500,6 +2500,11 @@ let make_test_sequence_variant_constant :
     ref
   = ref make_test_sequence_variant_constant        
 
+let is_poly_var_constant : Lambda.primitive lazy_t = lazy (
+  if !Config.bs_only then  
+    Pccall (Primitive.simple ~name:"#is_poly_var_const" ~arity:1 ~alloc:false)
+  else Pisint ) 
+
 let combine_variant names loc row arg partial ctx def
                     (tag_lambda_list, total1, _pats) =
   let row = Btype.row_repr row in
@@ -2514,9 +2519,9 @@ let combine_variant names loc row arg partial ctx def
   else
     num_constr := max_int;
   let test_int_or_block arg if_int if_block =
-    Lifthenelse(Lprim (Pisint, [arg], loc), if_int, if_block) in
+    Lifthenelse(Lprim (Lazy.force is_poly_var_constant, [arg], loc), if_int, if_block) in
   let sig_complete =  List.length tag_lambda_list = !num_constr
-  and one_action = same_actions tag_lambda_list in
+  and one_action = same_actions tag_lambda_list in (* reduandant work under bs context *)
   let fail, local_jumps =
     if
       sig_complete  || (match partial with Total -> true | _ -> false)
