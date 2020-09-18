@@ -1609,12 +1609,7 @@ let super_trace ppf =
         fprintf ppf "Further expanded:@,"
       end;
       fprintf ppf
-        "@[<v>\
-          @[%a@]@,\
-          vs@,\
-          @[%a@]\
-          %a\
-        @]"
+        "@[<hov>%a@ vs@ %a@]%a"
         (super_type_expansion ~tag:"error" t1) t1'
         (super_type_expansion ~tag:"info" t2) t2'
         (super_trace false) rem;
@@ -1638,14 +1633,8 @@ let super_unification_error unif tr txt1 ppf txt2 = begin
       let tr = List.map prepare_expansion tr in
       fprintf ppf
         "@[<v 0>\
-          @[<v 2>\
-            %t@,\
-            @[<2>%a@]\
-          @]@,\
-          @[<v 2>\
-            %t@,\
-            @[<2>%a@]\
-          @]\
+          @[<hov 2>%t@ %a@]@,\
+          @[<hov 2>%t@ %a@]\
           %a\
           %t\
         @]"
