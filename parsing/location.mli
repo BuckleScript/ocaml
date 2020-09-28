@@ -58,8 +58,10 @@ val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
 val print_loc: formatter -> t -> unit
 val print_error: formatter -> t -> unit
 val print_error_cur_file: formatter -> unit -> unit
+#if undefined BS_ONLY then (* Not using below APIs in ReScript *)
 val print_warning: t -> formatter -> Warnings.t -> unit
 val formatter_for_warnings : formatter ref
+#end
 val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
@@ -72,8 +74,6 @@ val warning_printer : (t -> formatter -> Warnings.t -> unit) ref
 
 val default_warning_printer : t -> formatter -> Warnings.t -> unit
 (** Original warning printer for use in hooks. *)
-
-val highlight_locations: formatter -> t list -> bool
 
 type 'a loc = {
   txt : 'a;
@@ -111,7 +111,7 @@ exception Error of error
 
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
-#if undefined BS_NO_COMPILER_PATCH then
+#if true then
 val print_error_prefix : Format.formatter -> unit
 val pp_ksprintf : ?before:(formatter -> unit) -> (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
 #end
