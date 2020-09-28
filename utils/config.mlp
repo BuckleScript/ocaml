@@ -34,6 +34,7 @@ let standard_library =
 #end
     standard_library_default
 let bs_only = ref false
+let syntax_kind = ref `ml
 let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
