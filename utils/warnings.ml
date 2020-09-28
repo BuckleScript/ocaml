@@ -620,6 +620,7 @@ let sub_locs = function
       ]
   | _ -> []
 
+let has_warnings = ref false ;;  
 let nerrors = ref 0;;
 
 type reporting_information =
@@ -639,6 +640,7 @@ let report w =
   match is_active w with
   | false -> `Inactive
   | true ->
+     has_warnings := true; 
      if is_error w then incr nerrors;
      `Active { number = number w; message = message w; is_error = is_error w;
                sub_locs = sub_locs w;
