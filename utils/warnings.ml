@@ -57,7 +57,9 @@ type t =
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
+#if undefined BS_ONLY then  
   | Multiple_definition of string * string * string (* 31 *)
+#end  
   | Unused_value_declaration of string      (* 32 *)
   | Unused_open of string                   (* 33 *)
   | Unused_type_declaration of string       (* 34 *)
@@ -77,14 +79,18 @@ type t =
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string * string option   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
+#if undefined BS_ONLY then          
   | Expect_tailcall                         (* 51 *)
+#end  
   | Fragile_literal_pattern                 (* 52 *)
   | Misplaced_attribute of string           (* 53 *)
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
+#if undefined BS_ONLY then  
   | No_cmx_file of string                   (* 58 *)
+#end  
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
@@ -139,7 +145,9 @@ let number = function
   | Wildcard_arg_to_constant_constr -> 28
   | Eol_in_string -> 29
   | Duplicate_definitions _ -> 30
+#if undefined BS_ONLY then  
   | Multiple_definition _ -> 31
+#end  
   | Unused_value_declaration _ -> 32
   | Unused_open _ -> 33
   | Unused_type_declaration _ -> 34
@@ -159,14 +167,18 @@ let number = function
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
   | Bad_docstring _ -> 50
+#if undefined BS_ONLY then  
   | Expect_tailcall -> 51
+#end  
   | Fragile_literal_pattern -> 52
   | Misplaced_attribute _ -> 53
   | Duplicated_attribute _ -> 54
   | Inlining_impossible _ -> 55
   | Unreachable_case -> 56
   | Ambiguous_pattern _ -> 57
+#if undefined BS_ONLY then    
   | No_cmx_file _ -> 58
+#end  
   | Assignment_to_non_mutable_value -> 59
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
@@ -360,15 +372,27 @@ let message = function
         ("the following methods are overridden by the class"
          :: cname  :: ":\n " :: slist)
   | Method_override [] -> assert false
+#if true then
+  | Partial_match "" ->
+      "You forgot to handle a possible case here, though we don't have more information on the value."
+  | Partial_match s ->
+      "You forgot to handle a possible case here, for example: \n  " ^ s
+#else  
   | Partial_match "" -> "this pattern-matching is not exhaustive."
   | Partial_match s ->
       "this pattern-matching is not exhaustive.\n\
        Here is an example of a case that is not matched:\n" ^ s
+#end       
   | Non_closed_record_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
       "\nEither bind these labels explicitly or add '; _' to the pattern."
+#if true then      
+  | Statement_type -> 
+    "This expression returns a value, but you're not doing anything with it. If this is on purpose, wrap it with `ignore`."      
+#else    
   | Statement_type ->
       "this expression should have type unit."
+#end      
   | Unused_match -> "this match case is unused."
   | Unused_pat   -> "this sub-pattern is unused."
   | Instance_variable_override [lab] ->
@@ -384,7 +408,17 @@ let message = function
   | Implicit_public_methods l ->
       "the following private methods were made public implicitly:\n "
       ^ String.concat " " l ^ "."
+#if true then
+  | Unerasable_optional_argument ->
+      String.concat ""
+        ["This optional parameter in final position will, in practice, not be optional.\n";
+         "  Reorder the parameters so that at least one non-optional one is in final position or, if all parameters are optional, insert a final ().\n\n";
+         "  Explanation: If the final parameter is optional, it'd be unclear whether a function application that omits it should be considered fully applied, or partially applied. Imagine writing `let title = display(\"hello!\")`, only to realize `title` isn't your desired result, but a curried call that takes a final optional argument, e.g. `~showDate`.\n\n";
+         "  Formal rule: an optional argument is considered intentionally omitted when the 1st positional (i.e. neither labeled nor optional) argument defined after it is passed in."
+        ]
+#else      
   | Unerasable_optional_argument -> "this optional argument cannot be erased."
+#end  
   | Undeclared_virtual_method m -> "the virtual method "^m^" is not declared."
   | Not_principal s -> s^" is not principal."
   | Without_principality s -> s^" without principality."
@@ -393,10 +427,21 @@ let message = function
       "this statement never returns (or has an unsound type.)"
   | Preprocessor s -> s
   | Useless_record_with ->
+     begin match !Config.syntax_kind with 
+      | `ml ->
       "all the fields are explicitly listed in this record:\n\
        the 'with' clause is useless."
+      | `reason | `rescript ->
+        "All the fields are already explicitly listed in this record. You can remove the `...` spread."
+     end   
+#if true then       
   | Bad_module_name (modname) ->
+    "This file's name is potentially invalid. The build systems conventionally turn a file name into a module name by upper-casing the first letter. " ^ modname ^ " isn't a valid module name.\n" ^
+    "Note: some build systems might e.g. turn kebab-case into CamelCase module, which is why this isn't a hard error."
+#else
+  | Bad_module_name (modname) ->  
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
+#end      
   | All_clauses_guarded ->
       "this pattern-matching is not exhaustive.\n\
        All clauses in this pattern-matching are guarded."
@@ -408,10 +453,12 @@ let message = function
   | Duplicate_definitions (kind, cname, tc1, tc2) ->
       Printf.sprintf "the %s %s is defined in both types %s and %s."
         kind cname tc1 tc2
+#if undefined BS_ONLY then        
   | Multiple_definition(modname, file1, file2) ->
       Printf.sprintf
         "files %s and %s both define a module named %s"
         file1 file2 modname
+#end        
   | Unused_value_declaration v -> "unused value " ^ v ^ "."
   | Unused_open s -> "unused open " ^ s ^ "."
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
@@ -491,8 +538,10 @@ let message = function
   | Bad_docstring unattached ->
       if unattached then "unattached documentation comment (ignored)"
       else "ambiguous documentation comment"
+#if undefined BS_ONLY then      
   | Expect_tailcall ->
       Printf.sprintf "expected tailcall"
+#end      
   | Fragile_literal_pattern ->
       Printf.sprintf
         "Code should not depend on the actual values of\n\
@@ -521,10 +570,12 @@ let message = function
         "Ambiguous or-pattern variables under guard;\n\
          %s may match different arguments. (See manual section 8.5)"
         msg
+#if undefined BS_ONLY then        
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \
          and its interface was not compiled with -opaque" name
+#end         
   | Assignment_to_non_mutable_value ->
       "A potential assignment to a non-mutable value was detected \n\
         in this source file.  Such assignments may generate incorrect code \n\
@@ -541,23 +592,23 @@ let message = function
 
 #if true then
   | Bs_unused_attribute s ->
-      "Unused BuckleScript attribute: " ^ s ^ "\n\
+      "Unused attribute: " ^ s ^ "\n\
       This means such annotation is not annotated properly. \n\
       for example, some annotations is only meaningful in externals \n"
   | Bs_polymorphic_comparison ->
-      "polymorphic comparison introduced (maybe unsafe)"
+      "Polymorphic comparison introduced (maybe unsafe)"
   | Bs_ffi_warning s ->
-      "BuckleScript FFI warning: " ^ s
+      "FFI warning: " ^ s
   | Bs_derive_warning s ->
-      "BuckleScript bs.deriving warning: " ^ s 
+      "bs.deriving warning: " ^ s 
   | Bs_fragile_external s ->     
-      "BuckleScript warning: " ^ s ^" : the external name is inferred from val name is unsafe from refactoring when changing value name"
+      s ^ " : the external name is inferred from val name is unsafe from refactoring when changing value name"
   | Bs_unimplemented_primitive s -> 
-      "BuckleScript warning: Unimplemented primitive used:" ^ s
+      "Unimplemented primitive used:" ^ s
   | Bs_integer_literal_overflow -> 
-      "BuckleScript warning: Integer literal exceeds the range of representable integers of type int"
+      "Integer literal exceeds the range of representable integers of type int"
   | Bs_uninterpreted_delimiters s -> 
-      "BuckleScript warning: Uninterpreted delimiters " ^ s  
+      "Uninterpreted delimiters " ^ s  
 #end      
 ;;
 
@@ -694,14 +745,14 @@ let descriptions =
    62, "Type constraint on GADT type declaration";
     
 #if true then    
-   101, "BuckleScript warning: Unused bs attributes";
-   102, "BuckleScript warning: polymorphic comparison introduced (maybe unsafe)";
-   103, "BuckleScript warning: about fragile FFI definitions" ;
-   104, "BuckleScript warning: bs.deriving warning with customized message ";
-   105, "BuckleScript warning: the external name is inferred from val name is unsafe from refactoring when changing value name";
-   106, "BuckleScript warning: Unimplemented primitive used:";
-   107, "BuckleScript warning: Integer literal exceeds the range of representable integers of type int";
-   108, "BuckleScript warning: Uninterpreted delimiters (for unicode)"  
+   101, "Unused bs attributes";
+   102, "Polymorphic comparison introduced (maybe unsafe)";
+   103, "Fragile FFI definitions" ;
+   104, "bs.deriving warning with customized message ";
+   105, "External name is inferred from val name is unsafe from refactoring when changing value name";
+   106, "Unimplemented primitive used:";
+   107, "Integer literal exceeds the range of representable integers of type int";
+   108, "Uninterpreted delimiters (for unicode)"  
 #end   
   ]
 ;;
