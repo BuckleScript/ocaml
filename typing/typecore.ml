@@ -4872,7 +4872,7 @@ let type_let env rec_flag spat_sexp_list scope =
 let type_expression env sexp =
   Typetexp.reset_type_variables();
   begin_def();
-  let exp = type_exp env sexp in
+  let exp = type_expect env sexp (instance_def Predef.type_unit) in
   end_def();
   if not (is_nonexpansive exp) then generalize_expansive env exp.exp_type;
   generalize exp.exp_type;
