@@ -4873,6 +4873,11 @@ let type_expression env sexp =
   Typetexp.reset_type_variables();
   begin_def();
   let exp = type_exp env sexp in
+  if Warnings.is_active Bs_toplevel_expression_unit then 
+    (try unify env exp.exp_type 
+      (instance_def Predef.type_unit) with 
+    | Unify _ 
+    | Tags _  -> Location.prerr_warning sexp.pexp_loc Bs_toplevel_expression_unit);
   end_def();
   if not (is_nonexpansive exp) then generalize_expansive env exp.exp_type;
   generalize exp.exp_type;
