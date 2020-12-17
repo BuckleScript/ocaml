@@ -1954,10 +1954,10 @@ module SArg = struct
   let make_isout h arg = Lprim (Pisout, [h ; arg],Location.none)
   let make_isin h arg = Lprim (Pnot,[make_isout h arg],Location.none)
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
-  let make_switch loc arg cases acts sw_names =
+  let make_switch loc arg cases acts ~offset sw_names =
     let l = ref [] in
     for i = Array.length cases-1 downto 0 do
-      l := (i,acts.(cases.(i))) ::  !l
+      l := (offset + i,acts.(cases.(i))) ::  !l
     done ;
     Lswitch(arg,
             {sw_numconsts = Array.length cases ; sw_consts = !l ;

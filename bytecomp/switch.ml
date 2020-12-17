@@ -106,7 +106,7 @@ module type S =
    val make_isout : act -> act -> act
    val make_isin : act -> act -> act
    val make_if : act -> act -> act -> act
-   val make_switch : Location.t -> act -> int array -> act array -> Lambda.switch_names option -> act
+   val make_switch : Location.t -> act -> int array -> act array -> offset:int -> Lambda.switch_names option -> act
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
  end
@@ -560,6 +560,9 @@ and enum top cases =
         do_make_if_out
           (Arg.make_const d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
     | _ ->
+        if (*true || *)!Config.bs_only then 
+          do_make_if_out
+            (Arg.make_const d) (Arg.make_offset ctx.arg (-l)) (mk_ifso ctx) (mk_ifno ctx) else
         Arg.bind
           (Arg.make_offset ctx.arg (-l))
           (fun arg ->
@@ -575,6 +578,9 @@ and enum top cases =
         do_make_if_in
           (Arg.make_const d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
     | _ ->
+        if (*true || *) !Config.bs_only then
+          do_make_if_in
+            (Arg.make_const d) (Arg.make_offset ctx.arg (-l)) (mk_ifso ctx) (mk_ifno ctx) else
         Arg.bind
           (Arg.make_offset ctx.arg (-l))
           (fun arg ->
@@ -750,12 +756,15 @@ let make_switch loc {cases=cases ; actions=actions} i j sw_names =
     (fun act i -> acts.(i) <- actions.(act))
     t ;
   (fun ctx ->
+  if !Config.bs_only then
+  Arg.make_switch ~offset:(ll+ctx.off) loc ctx.arg tbl acts sw_names
+  else 
     match -ll-ctx.off with
-    | 0 -> Arg.make_switch loc ctx.arg tbl acts sw_names
+    | 0 -> Arg.make_switch loc ctx.arg tbl acts sw_names ~offset:0
     | _ ->
         Arg.bind
           (Arg.make_offset ctx.arg (-ll-ctx.off))
-          (fun arg -> Arg.make_switch loc arg tbl acts sw_names))
+          (fun arg -> Arg.make_switch loc arg tbl acts sw_names ~offset:0))
 
 
 let make_clusters loc ({cases=cases ; actions=actions} as s) n_clusters k sw_names =
