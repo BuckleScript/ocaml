@@ -1447,7 +1447,7 @@ struct
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
-  let make_switch loc arg cases actions _names =
+  let make_switch loc arg cases actions ~offset:_ _names =
     make_switch arg cases actions (Debuginfo.from_location loc)
   let bind arg body = bind "switcher" arg body
 
