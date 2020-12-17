@@ -79,7 +79,7 @@ module type S =
       make_switch arg cases acts
       NB:  cases is in the value form *)
     val make_switch :
-        Location.t -> act -> int array -> act array -> Lambda.switch_names option -> act
+        Location.t -> act -> int array -> act array -> offset:int -> Lambda.switch_names option -> act
    (* Build last minute sharing of action stuff *)
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
