@@ -15,7 +15,14 @@
 
 (* Translation from typed abstract syntax to lambda terms,
    for the module language *)
-
+#if BS_ONLY then 
+module Translobj = struct 
+  let oo_wrap _env _b f a = f a 
+  let reset_labels () : unit = () 
+  let transl_store_label_init _ _ _ _ : int * _  =   assert false
+  let transl_label_init f = f ()      
+end  
+#end
 open Misc
 open Asttypes
 open Longident
@@ -25,7 +32,7 @@ open Typedtree
 open Lambda
 open Translobj
 open Translcore
-open Translclass
+
 
 type error =
   Circular_dependency of Ident.t
@@ -364,15 +371,15 @@ let rec bound_value_identifiers = function
 
 
 (* Code to translate class entries in a structure *)
-
+#if undefined BS_ONLY then
 let transl_class_bindings cl_list =
   let ids = List.map (fun (ci, _) -> ci.ci_id_class) cl_list in
   (ids,
    List.map
      (fun ({ci_id_class=id; ci_expr=cl; ci_virt=vf}, meths) ->
-       (id, transl_class ids id meths cl vf))
+       (id, Translclass.transl_class ids id meths cl vf))
      cl_list)
-
+#end
 (* Compile one or more functors, merging curried functors to produce
    multi-argument functors.  Any [@inline] attribute on a functor that is
    merged must be consistent with any other [@inline] attribute(s) on the
@@ -632,6 +639,7 @@ and transl_structure loc fields cc rootpath final_env = function
               body
           in
           lam, size
+#if undefined BS_ONLY then          
       | Tstr_class cl_list ->
           let (ids, class_bindings) = transl_class_bindings cl_list in
           let body, size =
@@ -639,6 +647,9 @@ and transl_structure loc fields cc rootpath final_env = function
               cc rootpath final_env rem
           in
           Lletrec(class_bindings, body), size
+#else 
+      | Tstr_class _ -> assert false      
+#end          
       | Tstr_include incl ->
           let ids = bound_value_identifiers incl.incl_type in
           let modl = incl.incl_mod in
@@ -972,6 +983,9 @@ let transl_store_structure glob map prims str =
               bindings
               (Lsequence(store_idents Location.none ids,
                          transl_store rootpath (add_idents true ids subst) rem))
+#if BS_ONLY then 
+        | Tstr_class _ -> assert false                         
+#else        
         | Tstr_class cl_list ->
             let (ids, class_bindings) = transl_class_bindings cl_list in
             let lam =
@@ -979,7 +993,7 @@ let transl_store_structure glob map prims str =
             in
             Lsequence(subst_lambda subst lam,
                       transl_store rootpath (add_idents false ids subst) rem)
-
+#end
         | Tstr_include{
             incl_loc=loc;
             incl_mod= {
@@ -1235,12 +1249,16 @@ let transl_toplevel_item item =
         (fun id modl _loc -> transl_module Tcoerce_none (Some(Pident id)) modl)
         bindings
         (make_sequence toploop_setvalue_id idents)
+#if BS_ONLY then 
+  | Tstr_class _ -> assert false         
+#else  
   | Tstr_class cl_list ->
       (* we need to use unique names for the classes because there might
          be a value named identically *)
       let (ids, class_bindings) = transl_class_bindings cl_list in
       List.iter set_toplevel_unique_name ids;
       Lletrec(class_bindings, make_sequence toploop_setvalue_id ids)
+#end      
   | Tstr_include incl ->
       let ids = bound_value_identifiers incl.incl_type in
       let modl = incl.incl_mod in
