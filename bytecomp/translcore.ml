@@ -940,6 +940,9 @@ let try_ids = Hashtbl.create 8
 
 let rec transl_exp e =
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
+#if BS_ONLY then
+  transl_exp0 e
+#else
   let eval_once =
     (* Whether classes for immediate objects must be cached *)
     match e.exp_desc with
@@ -948,7 +951,7 @@ let rec transl_exp e =
   in
   if eval_once then transl_exp0 e else
   Translobj.oo_wrap e.exp_env true transl_exp0 e
-
+#end
 and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, _, {val_kind = Val_prim p}) ->
@@ -1263,6 +1266,15 @@ and transl_exp0 e =
   | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp low, transl_exp high, dir,
            event_before body (transl_exp body))
+#if BS_ONLY then           
+  | Texp_send(expr,met,_) -> 
+    let obj = transl_exp expr in   
+    begin match met with 
+    | Tmeth_name nm -> 
+      Lsend(Public(Some nm),Lambda.lambda_unit,obj,[],e.exp_loc)
+    | _ -> assert false    
+    end
+#else
   | Texp_send(_, _, Some exp) -> transl_exp exp
   | Texp_send(expr, met, None) ->
       let obj = transl_exp expr in
@@ -1275,6 +1287,7 @@ and transl_exp0 e =
             Lsend (kind, tag, obj, cache, e.exp_loc)
       in
       event_after e lam
+#end      
   | Texp_new (cl, {Location.loc=loc}, _) ->
       Lapply{ap_should_be_tailcall=false;
              ap_loc=loc;
@@ -1288,6 +1301,9 @@ and transl_exp0 e =
   | Texp_setinstvar(path_self, path, _, expr) ->
       transl_setinstvar e.exp_loc (transl_normal_path path_self) path expr
   | Texp_override(path_self, modifs) ->
+#if BS_ONLY then 
+      assert false
+#else  
       let cpy = Ident.create "copy" in
       Llet(Strict, Pgenval, cpy,
            Lapply{ap_should_be_tailcall=false;
@@ -1302,6 +1318,7 @@ and transl_exp0 e =
                             (Lvar cpy) path expr, rem))
              modifs
              (Lvar cpy))
+#end             
   | Texp_letmodule(id, loc, modl, body) ->
       let defining_expr =
 #if true        
