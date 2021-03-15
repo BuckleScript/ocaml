@@ -288,7 +288,7 @@ let directive_parse token_with_comments lexbuf =
         match token_with_comments lexbuf  with
         | COMMENT _ 
         | DOCSTRING _ 
-        | EOL -> skip ()
+        (*|  EOL*) -> skip ()
         | EOF -> raise (Error (Unterminated_if, Location.curr lexbuf)) 
         | t -> t 
         in  skip ()
@@ -422,7 +422,7 @@ let directive_parse token_with_comments lexbuf =
   in
   let v = parse_or true in
   begin match token () with
-  | THEN ->  v 
+  | THEN | EOL ->  v 
   | _ -> raise (Error (Expect_hash_then_in_conditional, Location.curr lexbuf))
   end
 
