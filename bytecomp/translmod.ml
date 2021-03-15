@@ -226,7 +226,7 @@ let mod_prim name args loc =
 
 let undefined_location loc =
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
-#if true then  
+#if true  
   let fname = Filename.basename fname in
 #end
   Lconst(Const_block(0, Lambda.Blk_tuple,
@@ -606,7 +606,7 @@ and transl_structure loc fields cc rootpath final_env = function
                                                  mb.mb_attributes
           in
           let module_body =
-#if true then            
+#if true            
             if !Config.bs_only then module_body
             else
 #end            
@@ -633,7 +633,7 @@ and transl_structure loc fields cc rootpath final_env = function
                  let module_body =
                    transl_module Tcoerce_none (field_path rootpath id) modl
                  in
-#if true then            
+#if true            
                  if !Config.bs_only then module_body
                  else
 #end                    

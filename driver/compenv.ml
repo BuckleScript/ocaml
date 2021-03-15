@@ -78,7 +78,7 @@ let is_unit_name name =
 ;;
 
 let check_unit_name ppf filename name =
-#if undefined BS_NO_COMPILER_PATCH then
+#if undefined BS_NO_COMPILER_PATCH
     let _ = ppf in
     let _ = filename in
     let _ = name in 

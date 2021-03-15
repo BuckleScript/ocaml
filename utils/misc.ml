@@ -17,7 +17,7 @@
 
 exception Fatal_error
 
-#if true then
+#if true
 let array_of_list_rev = function
     [] -> [||]
   | hd::tl ->

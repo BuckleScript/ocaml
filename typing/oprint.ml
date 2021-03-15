@@ -22,7 +22,7 @@ let cautious f ppf arg =
   try f ppf arg with
     Ellipsis -> fprintf ppf "..."
 
-#if true then
+#if true
 let out_ident = ref pp_print_string
 let map_primitive_name = ref (fun x -> x)
 #end
@@ -273,7 +273,7 @@ and print_simple_out_type ppf =
     Otyp_class (ng, id, tyl) ->
       fprintf ppf "@[%a%s#%a@]" print_typargs tyl (if ng then "_" else "")
         print_ident id
-#if true then         
+#if true         
   | Otyp_constr (Oide_dot (Oide_dot (Oide_ident "Js", "Fn"), name  ),
                  [tyl])
     ->

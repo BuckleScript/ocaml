@@ -84,7 +84,7 @@ let output_cmi filename oc cmi =
   output_value oc cmi.cmi_flags;
   crc
 
-#if true then
+#if true
 (* This function is also called by [save_cmt] as cmi_format is subset of 
        cmt_format, so dont close the channel yet
 *)

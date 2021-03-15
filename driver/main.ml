@@ -52,7 +52,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
   let _no_keep_docs = unset keep_docs
-#if true then 
+#if true 
   let _bs_d_only = set Config.bs_only
 #end
   let _keep_locs = set keep_locs
@@ -152,7 +152,7 @@ let main () =
         exit 2
       end
     end;
-#if true then     
+#if true     
     if not !Config.bs_only then (
 #end      
     readenv ppf Before_link;
@@ -202,7 +202,7 @@ let main () =
       Bytelink.link ppf (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
-#if true then     
+#if true     
     )
 #end
   with x ->

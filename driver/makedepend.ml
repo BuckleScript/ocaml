@@ -41,7 +41,7 @@ let module_map = ref StringMap.empty
 let debug = ref false
 
 let cmx_suffix = 
-#if defined BS_OCAMLDEP then
+#if defined BS_OCAMLDEP
     ".cmj"
 #else
     ".cmx"
@@ -332,7 +332,7 @@ let print_ml_dependencies source_file extracted_deps pp_deps =
   let (byt_deps, native_deps) =
     Depend.StringSet.fold (find_dependency ML)
       extracted_deps init_deps in
-#if undefined BS_OCAMLDEP then  
+#if undefined BS_OCAMLDEP
   if not !native_only then
     print_dependencies (byte_targets @ extra_targets) (byt_deps @ pp_deps);
 #end
@@ -369,7 +369,7 @@ let ml_file_dependencies source_file =
       | Ptop_dir _ -> []
     in
     List.flatten (List.map f (Parse.use_file lexbuf))
-#if defined BS_OCAMLDEP then
+#if defined BS_OCAMLDEP
     |> !Ppx_entry.rewrite_implementation
 #end      
   in
@@ -382,7 +382,7 @@ let ml_file_dependencies source_file =
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
     read_parse_and_extract
-#if defined BS_OCAMLDEP then
+#if defined BS_OCAMLDEP
       (fun lexbuf -> !Ppx_entry.rewrite_signature (Parse.interface lexbuf) )
 #else
       Parse.interface
@@ -562,13 +562,13 @@ let print_version_num () =
 ;;
 
 let main () =
-#if defined BS_OCAMLDEP then
+#if defined BS_OCAMLDEP
   native_only := true;
   Bs_conditional_initial.setup_env ();
   one_line := true;
 #end  
   Clflags.classic := false;
-#if undefined BS_NO_COMPILER_PATCH then 
+#if undefined BS_NO_COMPILER_PATCH
   (if not !Clflags.no_implicit_current_dir then
     add_to_list first_include_dirs Filename.current_dir_name);
 #else

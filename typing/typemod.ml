@@ -57,7 +57,7 @@ module InterfaceHooks = Misc.MakeHooks(struct
     type t = Typedtree.signature
   end)
 
-#if true then
+#if true
 let should_hide : (Typedtree.module_binding -> bool) ref = ref (fun _ -> false)
 #end  
 open Typedtree
@@ -2044,7 +2044,7 @@ let report_error ppf = function
         "This is an alias for module %a, which is missing"
         path p
 
-#if true then
+#if true
 let super_report_error_no_wrap_printing_env = report_error
 #end
 

@@ -522,7 +522,7 @@ let glb_array_type t1 t2 =
 let specialize_primitive p env ty (* ~has_constant_constructor *) =
   try
     let table = Hashtbl.find (Lazy.force comparisons_table) p.prim_name in
-#if false then          
+#if false
     let {gencomp; intcomp; simplify_constant_constructor} =
       table in
     if has_constant_constructor && simplify_constant_constructor then
@@ -610,7 +610,7 @@ let transl_primitive loc p env ty path =
       let rec make_params n =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
-#if undefined BS_NO_COMPILER_PATCH then 
+#if undefined BS_NO_COMPILER_PATCH
       if params = [] then Lprim (prim, [], loc) (* arity = 0 in Buckle? TODO: unneeded*)
       else
 #end      
@@ -772,7 +772,7 @@ let primitive_is_ccall = function
 let assert_failed exp =
   let (fname, line, char) =
     Location.get_pos_info exp.exp_loc.Location.loc_start in
-#if undefined BS_NO_COMPILER_PATCH then     
+#if undefined BS_NO_COMPILER_PATCH
   let fname = 
     Filename.basename fname
   in   
@@ -1058,7 +1058,7 @@ and transl_exp0 e =
   | Texp_array expr_list ->
       let kind = array_kind e in
       let ll = transl_list expr_list in
-#if true then       
+#if true       
       if !Config.bs_only then 
          Lprim(Pmakearray (kind, Mutable), ll, e.exp_loc)
       else   
@@ -1161,7 +1161,7 @@ and transl_exp0 e =
              (Lvar cpy))
   | Texp_letmodule(id, loc, modl, body) ->
       let defining_expr =
-#if true then        
+#if true        
         if !Config.bs_only then !transl_module Tcoerce_none None modl
         else
 #end        

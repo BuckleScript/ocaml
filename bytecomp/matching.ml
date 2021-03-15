@@ -2652,7 +2652,7 @@ let rec lower_bind v arg lam = match lam with
       bind Alias v arg lam
     else
       Llet (Alias, k, vv, lv, lower_bind v arg l)
-#if true then
+#if true
 | Lvar u when Ident.same u v && Ident.name u = "*sth*" -> 
     arg (* eliminate let *sth* = from_option x in *sth* *)
 #end    
@@ -2961,7 +2961,7 @@ let compile_matching repr handler_fun arg pat_act_list partial =
 let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
-#if true then     
+#if true     
   let fname = 
     Filename.basename fname
   in   
@@ -3107,7 +3107,7 @@ let for_let loc param pat body =
       let k = Typeopt.value_kind pat.pat_env pat.pat_type in
       Llet(Strict, k, id, param, body)
   | _ ->
-#if true then   
+#if true   
       (* Turn off such optimization to reduce diff in the beginning*)
       if !Config.bs_only then simple_for_let loc param pat body 
       else

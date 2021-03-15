@@ -236,7 +236,7 @@ let mk_keep_locs f =
   "-keep-locs", Arg.Unit f, " Keep locations in .cmi files (default)"
 ;;
 
-#if true then
+#if true
 let mk_bs_d_only f =
   "-bs-d", Arg.Unit f, " Turn bs only (only for testing)"
 #end
@@ -899,7 +899,7 @@ module type Bytecomp_options = sig
   val _dinstr : unit -> unit
 
   val _use_prims : string -> unit
-#if true then 
+#if true 
   val _bs_d_only : unit -> unit
 #end
 end;;
@@ -998,7 +998,7 @@ module type Ocamldoc_options = sig
   val _v : unit -> unit
   val _verbose : unit -> unit
   val _vmthread : unit -> unit
-#if true then  
+#if true  
   val _nopervasives : unit -> unit
 #end  
 end
@@ -1103,7 +1103,7 @@ struct
 
     mk_args F._args;
     mk_args0 F._args0;
-#if true then     
+#if true     
     mk_bs_d_only F._bs_d_only;
 #end    
   ]
@@ -1416,7 +1416,7 @@ struct
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
-#if true then
+#if true
     mk_nopervasives F._nopervasives;
 #end    
     mk_open F._open;

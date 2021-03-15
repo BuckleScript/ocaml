@@ -601,7 +601,7 @@ let rec lam ppf = function
   | Lsend (k, met, obj, largs, _) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-#if true then         
+#if true         
       let kind = 
         match k with 
         | Self -> "self"    

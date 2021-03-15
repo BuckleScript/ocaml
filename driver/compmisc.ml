@@ -34,7 +34,7 @@ let init_path ?(dir="") native =
   in
   let exp_dirs =
     List.map (Misc.expand_directory Config.standard_library) dirs in
-#if undefined BS_NO_COMPILER_PATCH then 
+#if undefined BS_NO_COMPILER_PATCH
     Config.load_path :=
       (if !Clflags.no_implicit_current_dir then 
          List.rev_append exp_dirs (Clflags.std_include_dir ())

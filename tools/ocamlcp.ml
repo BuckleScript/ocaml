@@ -130,7 +130,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
   let anonymous = process_file
-#if true then   
+#if true   
   let _bs_d_only = option "-bs-d"
 #end
 end);;
