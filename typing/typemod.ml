@@ -1815,8 +1815,13 @@ let type_implementation_more ?check_exists sourcefile outputprefix modulename in
           raise(Error(Location.in_file sourcefile, Env.empty,
                       Interface_not_compiled sourceintf)) in
       let dclsig = Env.read_signature modulename intf_file in
+      let source_intf_file = match Filename.extension sourcefile with
+        | ".re"
+        | ".res" -> sourcefile ^ "i"
+        | _ ->  intf_file
+        in
       let coercion =
-        Includemod.compunit initial_env sourcefile sg intf_file dclsig in
+        Includemod.compunit initial_env sourcefile sg source_intf_file dclsig in
       Typecore.force_delayed_checks ();
       (* It is important to run these checks after the inclusion test above,
          so that value declarations which are not used internally but exported
