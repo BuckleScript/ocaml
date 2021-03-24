@@ -2519,7 +2519,7 @@ let combine_variant names loc row arg partial ctx def
     else   
       Lifthenelse(Lprim (Pisint, [arg], loc), if_int, if_block) in
   let sig_complete =  List.length tag_lambda_list = !num_constr
-  and one_action = same_actions tag_lambda_list in
+  and one_action = same_actions tag_lambda_list in (* reduandant work under bs context *)
   let fail, local_jumps =
     if
       sig_complete  || (match partial with Total -> true | _ -> false)
