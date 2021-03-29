@@ -205,7 +205,7 @@ type unification_mode =
 let umode = ref Expression
 let generate_equations = ref false
 let assume_injective = ref false
-
+let variant_is_subtype = ref (fun _env _row _p1 -> false)
 let set_mode_pattern ~generate ~injective f =
   let old_unification_mode = !umode
   and old_gen = !generate_equations
@@ -3990,6 +3990,11 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Exit ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
+    | Tvariant v, _ when 
+        !Config.bs_only &&
+        !variant_is_subtype env (row_repr v) t2 
+      -> 
+        cstrs
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2, [])) ->
