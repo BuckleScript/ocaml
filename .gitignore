@@ -412,4 +412,4 @@ _ocamltest
 /bin/
 lib/ocaml/
 man/
-
+.vscode
