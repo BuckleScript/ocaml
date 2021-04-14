@@ -750,17 +750,17 @@ let transl_primitive loc p env ty path =
       | _ -> assert false
     end
   | _ ->
-      let rec make_params n =
-        if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
-      let params = make_params p.prim_arity in
-#if undefined BS_NO_COMPILER_PATCH
-      if params = [] then Lprim (prim, [], loc) (* arity = 0 in Buckle? TODO: unneeded*)
-      else
-#end      
-      Lfunction{ kind = Curried; params;
-                 attr = default_stub_attribute;
-                 loc = loc;
-                 body = Lprim(prim, List.map (fun id -> Lvar id) params, loc) }
+      let rec make_params n total =
+        if n <= 0 then [] else Ident.create ("prim" ^ string_of_int (total - n)) :: make_params (n-1) total in
+      let prim_arity = p.prim_arity in 
+      if prim_arity = 0 then Lprim (prim, [], loc) else       
+        let params = 
+          if prim_arity = 1 then [Ident.create "prim"]  
+          else  make_params prim_arity prim_arity in
+        Lfunction{ kind = Curried; params;
+                   attr = default_stub_attribute;
+                   loc = loc;
+                   body = Lprim(prim, List.map (fun id -> Lvar id) params, loc) }
 
 let transl_primitive_application loc prim env ty path args =
   let prim_name = prim.prim_name in
@@ -955,6 +955,7 @@ let rec transl_exp e =
 and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, _, {val_kind = Val_prim p}) ->
+#if undefined BS_ONLY      
       let public_send = p.prim_name = "%send" in
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public None else Self in
@@ -972,6 +973,7 @@ and transl_exp0 e =
                   body = Lsend(Cached, Lvar meth, Lvar obj,
                                [Lvar cache; Lvar pos], e.exp_loc)}
       else
+#end      
         transl_primitive e.exp_loc p e.exp_env e.exp_type (Some path)
   | Texp_ident(_, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
@@ -1266,7 +1268,7 @@ and transl_exp0 e =
   | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp low, transl_exp high, dir,
            event_before body (transl_exp body))
-#if BS_ONLY then           
+#if BS_ONLY
   | Texp_send(expr,met,_) -> 
     let obj = transl_exp expr in   
     begin match met with 
