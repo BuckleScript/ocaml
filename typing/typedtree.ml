@@ -285,7 +285,7 @@ and primitive_coercion =
     pc_type: type_expr;
     pc_env: Env.t;
     pc_loc : Location.t;
-#if undefined BS_NO_COMPILER_PATCH then     
+#if 1
     pc_id : Ident.t;
 #end
   }

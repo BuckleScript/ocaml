@@ -69,3 +69,6 @@ type error =
   | No_native_primitive_with_repr_attribute
 
 exception Error of Location.t * error
+
+val coerce : 
+  (description -> description -> bool ) ref

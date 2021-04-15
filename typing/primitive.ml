@@ -34,6 +34,11 @@ type description =
     prim_native_repr_args: native_repr list;
     prim_native_repr_res: native_repr }
 
+let coerce : (description -> description -> bool) ref = 
+  ref (fun 
+        (p1 : description) (p2 : description) ->
+        p1 = p2
+      )
 type error =
   | Old_style_float_with_native_repr_attribute
   | Old_style_noalloc_with_noalloc_attribute

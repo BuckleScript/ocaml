@@ -915,10 +915,8 @@ let primitive_is_ccall = function
 let assert_failed exp =
   let (fname, line, char) =
     Location.get_pos_info exp.exp_loc.Location.loc_start in
-#if undefined BS_NO_COMPILER_PATCH
-  let fname = 
-    Filename.basename fname
-  in   
+#if 1
+  let fname = Filename.basename fname in   
 #end     
   Lprim(Praise Raise_regular, [event_after exp
     (Lprim(Pmakeblock(0, Blk_extension, Immutable, None),
@@ -955,7 +953,8 @@ let rec transl_exp e =
 and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, _, {val_kind = Val_prim p}) ->
-#if undefined BS_ONLY      
+#if BS_ONLY
+#else
       let public_send = p.prim_name = "%send" in
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public None else Self in

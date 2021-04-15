@@ -374,7 +374,7 @@ let message = function
         ("the following methods are overridden by the class"
          :: cname  :: ":\n " :: slist)
   | Method_override [] -> assert false
-#if true then
+#if 1
   | Partial_match "" ->
       "You forgot to handle a possible case here, though we don't have more information on the value."
   | Partial_match s ->
@@ -386,9 +386,9 @@ let message = function
        Here is an example of a case that is not matched:\n" ^ s
 #end       
   | Non_closed_record_pattern s ->
-      "the following labels are not bound in this record pattern:\n" ^ s ^
+      "the following labels are not bound in this record pattern: " ^ s ^
       "\nEither bind these labels explicitly or add '; _' to the pattern."
-#if true then      
+#if 1
   | Statement_type -> 
     "This expression returns a value, but you're not doing anything with it. If this is on purpose, wrap it with `ignore`."      
 #else    
@@ -410,7 +410,7 @@ let message = function
   | Implicit_public_methods l ->
       "the following private methods were made public implicitly:\n "
       ^ String.concat " " l ^ "."
-#if true then
+#if 1
   | Unerasable_optional_argument ->
       String.concat ""
         ["This optional parameter in final position will, in practice, not be optional.\n";

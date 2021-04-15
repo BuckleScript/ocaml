@@ -32,7 +32,7 @@ let value_descriptions ~loc env name
     ~use:vd2.val_loc
     loc
     vd1.val_attributes vd2.val_attributes
-#if undefined BS_NO_COMPILER_PATCH then
+#if 1
     (Ident.name name);
 #else    
     name;
@@ -40,12 +40,12 @@ let value_descriptions ~loc env name
   if Ctype.moregeneral env true vd1.val_type vd2.val_type then begin
     match (vd1.val_kind, vd2.val_kind) with
         (Val_prim p1, Val_prim p2) ->
-          if p1 = p2 then Tcoerce_none else raise Dont_match
+          if !Primitive.coerce p1 p2 then Tcoerce_none else raise Dont_match
       | (Val_prim p, _) ->
           let pc = {pc_desc = p; pc_type = vd2.Types.val_type;
                   pc_env = env; pc_loc = vd1.Types.val_loc;
-#if undefined BS_NO_COMPILER_PATCH then
-    pc_id = name;
+#if 1
+                      pc_id = name;
 #end
                    } in
           Tcoerce_primitive pc
