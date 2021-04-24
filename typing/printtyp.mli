@@ -79,7 +79,7 @@ val report_unification_error:
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 
-#if undefined BS_NO_COMPILER_PATCH then
+#if 1
 val super_report_unification_error:
     formatter -> Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
     (formatter -> unit) -> (formatter -> unit) ->

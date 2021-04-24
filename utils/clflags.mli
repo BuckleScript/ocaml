@@ -211,7 +211,7 @@ val color : Misc.Color.setting option ref
 
 val unboxed_types : bool ref
 
-#if undefined BS_ONLY then
+#if undefined BS_ONLY
 val arg_spec : (string * Arg.spec * string) list ref
 
 (* [add_arguments __LOC__ args] will add the arguments from [args] at
@@ -233,7 +233,7 @@ val print_arguments : string -> unit
 (* [reset_arguments ()] clear all declared arguments *)
 val reset_arguments : unit -> unit
 #end
-#if true then
+#if 1
 type mli_status = Mli_na | Mli_exists | Mli_non_exists
 val no_implicit_current_dir : bool ref
 val assume_no_mli : mli_status ref

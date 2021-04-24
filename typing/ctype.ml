@@ -251,7 +251,7 @@ let is_datatype decl=
    * cty_self must be a Tobject
    * ...
 *)
-
+type fields = (string * Types.field_kind * Types.type_expr) list      
 (**** Object field manipulation. ****)
 
 let object_fields ty =
@@ -259,8 +259,8 @@ let object_fields ty =
     Tobject (fields, _) -> fields
   | _                   -> assert false
 
-let flatten_fields ty =
-  let rec flatten l ty =
+let flatten_fields (ty : Types.type_expr) : fields * _ =
+  let rec flatten (l : fields) ty =
     let ty = repr ty in
     match ty.desc with
       Tfield(s, k, ty1, ty2) ->
@@ -275,7 +275,10 @@ let build_fields level =
   List.fold_right
     (fun (s, k, ty1) ty2 -> newty2 level (Tfield(s, k, ty1, ty2)))
 
-let associate_fields fields1 fields2 =
+
+let associate_fields 
+  (fields1 : fields ) 
+  (fields2 : fields ) : _ * fields * fields =
   let rec associate p s s' =
     function
       (l, []) ->
@@ -2591,7 +2594,7 @@ and make_rowvar level use1 rest1 use2 rest2  =
   if use1 then rest1 else
   if use2 then rest2 else newvar2 ?name level
 
-and unify_fields env ty1 ty2 =          (* Optimization *)
+and unify_fields env (ty1 : Types.type_expr) (ty2 : Types.type_expr) =          (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -3302,7 +3305,7 @@ and eqtype_list rename type_pairs subst env tl1 tl2 =
     raise (Unify []);
   List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
 
-and eqtype_fields rename type_pairs subst env ty1 ty2 =
+and eqtype_fields rename type_pairs subst env ty1 ty2 : unit =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   (* First check if same row => already equal *)

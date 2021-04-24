@@ -2692,24 +2692,26 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       end
   | Pexp_constant(Pconst_string (str, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
+#if undefined BS_ONLY     
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
     let fmt6_path =
       Path.(Pdot (Pident (Ident.create_persistent "CamlinternalFormatBasics"),
                   "format6", 0)) in
-    let is_format = match ty_exp.desc with
+    let is_format = not !Config.bs_only && (match ty_exp.desc with
       | Tconstr(path, _, _) when Path.same path fmt6_path ->
         if !Clflags.principal && ty_exp.level <> generic_level then
           Location.prerr_warning loc
             (Warnings.Not_principal "this coercion to format6");
         true
-      | _ -> false
+      | _ -> false)
     in
     if is_format then
       let format_parsetree =
         { (type_format loc str env) with pexp_loc = sexp.pexp_loc }  in
       type_expect ?in_function env format_parsetree ty_expected
     else
+#end    
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
@@ -3767,7 +3769,7 @@ and type_label_access env srecord lid =
 (* Typing format strings for printing or reading.
    These formats are used by functions in modules Printf, Format, and Scanf.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
-
+#if undefined BS_ONLY 
 and type_format loc str env =
   let loc = {loc with Location.loc_ghost = true} in
   try
@@ -4014,7 +4016,7 @@ and type_format loc str env =
     ))
   with Failure msg ->
     raise (Error (loc, env, Invalid_format msg))
-
+#end
 and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
