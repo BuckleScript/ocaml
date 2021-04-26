@@ -37,8 +37,8 @@ type summary =
 type t
 
 val empty: t
-val initial_safe_string: t
-val initial_unsafe_string: t
+val initial_safe_string: t lazy_t
+
 val diff: t -> t -> Ident.t list
 val copy_local: from:t -> t -> t
 
