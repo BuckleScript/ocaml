@@ -42,9 +42,7 @@ let init_path () =
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
   let initial =
-    if Config.safe_string then Env.initial_safe_string
-    else if !Clflags.unsafe_string then Env.initial_unsafe_string
-    else Env.initial_safe_string
+    Lazy.force Env.initial_safe_string
   in
   let open_mod env m =
     let open Asttypes in
