@@ -247,17 +247,22 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_bool decl_bool (
   add_type ident_float decl_abstr (
   add_type ident_string decl_abstr (
-  add_type ident_char decl_abstr_imm (
   add_type ident_int decl_abstr_imm (
   add_type ident_extension_constructor decl_abstr (
   add_type ident_floatarray decl_abstr (
-    empty_env)))))))))))))))))))))))))))
+    empty_env))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in
   let res = add_type ident_bytes decl_abstr common in 
-  if !Config.bs_only then res 
-  else add_type ident_int32 decl_abstr res
+  if !Config.bs_only then 
+    let decl_type_char = 
+        {decl_abstr with 
+        type_manifest = Some type_int; 
+        type_private = Private} in 
+    add_type ident_char decl_type_char res 
+  else 
+    add_type ident_char decl_abstr_imm (add_type ident_int32 decl_abstr res)
   
   
 let builtin_values =

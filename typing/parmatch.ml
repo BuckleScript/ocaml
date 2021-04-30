@@ -881,8 +881,10 @@ let full_match closing env =  match env with
         (fun (tag,f) ->
           Btype.row_field_repr f = Rabsent || List.mem tag fields)
         row.row_fields
+#if 0
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
-    List.length env = 256
+    List.length env = 256 
+#end    
 | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
 | ({pat_desc = Tpat_tuple(_)},_) :: _ -> true
 | ({pat_desc = Tpat_record(_)},_) :: _ -> true
@@ -1082,6 +1084,7 @@ let build_other ext env = match env with
             make_pat (Tpat_or (pat, p_res, None)) p.pat_type p.pat_env)
           pat other_pats
     end
+#if 0    
 | ({pat_desc = Tpat_constant(Const_char _)} as p,_) :: _ ->
     let all_chars =
       List.map
@@ -1108,11 +1111,13 @@ let build_other ext env = match env with
 
     try_chars
       [ 'a', 'z' ; 'A', 'Z' ; '0', '9' ;
-        ' ', '~' ; Char.chr 0 , Char.chr 255]
-
-| ({pat_desc=(Tpat_constant (Const_int _))} as p,_) :: _ ->
+        ' ', '~' ; Char.chr 0 , Char.chr 255] 
+#end
+| ({pat_desc=(Tpat_constant (Const_int _ | Const_char _))} as p,_) :: _ ->
     build_other_constant
-      (function Tpat_constant(Const_int i) -> i | _ -> assert false)
+      (function Tpat_constant(Const_int i) -> i 
+      | Tpat_constant (Const_char i) -> Char.code i
+      | _ -> assert false)
       (function i -> Tpat_constant(Const_int i))
       0 succ p env
 | ({pat_desc=(Tpat_constant (Const_int32 _))} as p,_) :: _ ->

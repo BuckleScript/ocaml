@@ -592,12 +592,12 @@ let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
                 (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
-  if (c < 0 || c > 255) then
+  if not (Uchar.is_valid c ) then
     if in_comment ()
     then 'x'
     else raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
                       Location.curr lexbuf))
-  else Char.chr c
+  else (Obj.magic (c : int) : char)
 
 let char_for_octal_code lexbuf i =
   let c = 64 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
@@ -654,10 +654,6 @@ let preprocessor = ref None
 
 let escaped_newlines = ref false
 
-(* Warn about Latin-1 characters used in idents *)
-
-let warn_latin1 lexbuf =
-  Location.deprecated (Location.curr lexbuf)"ISO-Latin1 characters in identifiers"
 
 let handle_docstrings = ref true
 let comment_list = ref []
@@ -734,10 +730,6 @@ let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '_']
 let uppercase = ['A'-'Z']
 let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
-let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar_latin1 =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let dotsymbolchar =
@@ -783,24 +775,16 @@ rule token = parse
       { TILDE }
   | "~" lowercase identchar * ':'
       { LABEL (get_label_name lexbuf) }
-  | "~" lowercase_latin1 identchar_latin1 * ':'
-      { warn_latin1 lexbuf; LABEL (get_label_name lexbuf) }
   | "?"
       { QUESTION }
   | "?" lowercase identchar * ':'
       { OPTLABEL (get_label_name lexbuf) }
-  | "?" lowercase_latin1 identchar_latin1 * ':'
-      { warn_latin1 lexbuf; OPTLABEL (get_label_name lexbuf) }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
         try Hashtbl.find keyword_table s
         with Not_found -> LIDENT s }
-  | lowercase_latin1 identchar_latin1 *
-      { warn_latin1 lexbuf; LIDENT (Lexing.lexeme lexbuf) }
   | uppercase identchar *
       { UIDENT(Lexing.lexeme lexbuf) }       (* No capitalized keywords *)
-  | uppercase_latin1 identchar_latin1 *
-      { warn_latin1 lexbuf; UIDENT(Lexing.lexeme lexbuf) }
   | int_literal { INT (Lexing.lexeme lexbuf, None) }
   | (int_literal as lit) (literal_modifier as modif)
       { INT (lit, Some modif) }
