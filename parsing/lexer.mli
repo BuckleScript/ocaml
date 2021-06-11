@@ -19,6 +19,8 @@ val init : unit -> unit
 val token: Lexing.lexbuf -> Parser.token
 val skip_hash_bang: Lexing.lexbuf -> unit
 
+type directive_type 
+
 type error =
   | Illegal_character of char
   | Illegal_escape of string
@@ -28,6 +30,14 @@ type error =
   | Keyword_as_label of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
+  | Unterminated_paren_in_conditional
+  | Unterminated_if
+  | Unterminated_else 
+  | Unexpected_token_in_conditional 
+  | Expect_hash_then_in_conditional
+  | Illegal_semver of string
+  | Unexpected_directive
+  | Conditional_expr_expected_type of directive_type * directive_type                           
 ;;
 
 exception Error of error * Location.t
