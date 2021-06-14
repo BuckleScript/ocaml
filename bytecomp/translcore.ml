@@ -1129,7 +1129,9 @@ and transl_exp0 e =
           | Longident.Lident "None"
              when Datarepr.constructor_has_optional_shape cstr
             -> Pt_shape_none
-          | _ -> Pt_constructor {name = cstr.cstr_name; const = cstr.cstr_consts; non_const = cstr.cstr_nonconsts}        
+          | _ -> 
+            if Datarepr.constructor_has_optional_shape cstr then Pt_shape_none 
+            else Pt_constructor {name = cstr.cstr_name; const = cstr.cstr_consts; non_const = cstr.cstr_nonconsts}
           ))
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
