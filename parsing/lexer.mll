@@ -110,9 +110,7 @@ let () =
   replace_directive_built_in_value "OS_TYPE" 
     (Dir_string Sys.os_type);
   replace_directive_built_in_value "BIG_ENDIAN" 
-    (Dir_bool Sys.big_endian);
-  replace_directive_built_in_value "WORD_SIZE" 
-    (Dir_int Sys.word_size)
+    (Dir_bool Sys.big_endian)
 
 let find_directive_built_in_value k =
   Hashtbl.find directive_built_in_values k 
