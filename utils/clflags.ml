@@ -280,7 +280,7 @@ let use_inlining_arguments_set ?round (arg:inlining_arguments) =
     default_inline_threshold arg.inline_threshold;
   set_int inline_toplevel_threshold
     default_inline_toplevel_threshold arg.inline_toplevel_threshold
-
+#if 0
 (* o1 is the default *)
 let o1_arguments = {
   inline_call_cost = None;
@@ -341,7 +341,7 @@ let o3_arguments = {
   inline_threshold = Some 50.;
   inline_toplevel_threshold = Some (50 * inline_toplevel_multiplier);
 }
-
+#end
 let all_passes = ref []
 let dumped_passes_list = ref []
 let dumped_pass s =

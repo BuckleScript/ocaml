@@ -2694,7 +2694,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       end
   | Pexp_constant(Pconst_string (str, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
-#if undefined BS_ONLY     
+#if 0
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env ty_expected in
     let fmt6_path =
@@ -3771,7 +3771,7 @@ and type_label_access env srecord lid =
 (* Typing format strings for printing or reading.
    These formats are used by functions in modules Printf, Format, and Scanf.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
-#if undefined BS_ONLY 
+#if 0
 and type_format loc str env =
   let loc = {loc with Location.loc_ghost = true} in
   try
