@@ -1,3 +1,19 @@
+
+This is a fork of OCaml compiler to build Rescript compiler.
+It has a tiny patch to support conditonal compilation.
+
+If you are already familar with opam, you can install it using opam
+instead.
+
+```
+opam switch create 4.06.1+rescript
+```
+
+If you decide to build the compiler from source, a recommended configuration is as below:
+```
+./configure -cc "gcc -Wno-implicit-function-declaration -fcommon" -flambda 
+```
+
 |=====
 | Branch `trunk` | Branch `4.05` | Branch `4.04`
 
