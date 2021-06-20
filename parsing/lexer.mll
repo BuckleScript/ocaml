@@ -107,14 +107,6 @@ let () =
   in
   replace_directive_built_in_value "OCAML_VERSION" 
     (Dir_string version);
-  replace_directive_built_in_value "OCAML_PATCH"
-    (Dir_string 
-       (match String.rindex version '+' with 
-       | exception Not_found -> ""
-       | i -> 
-           String.sub version (i + 1)
-             (String.length version - i - 1)))
-  ;
   replace_directive_built_in_value "OS_TYPE" 
     (Dir_string Sys.os_type);
   replace_directive_built_in_value "BIG_ENDIAN" 
