@@ -2692,7 +2692,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_attributes = sexp.pexp_attributes;
           exp_env = env }
       end
-  | Pexp_constant(Pconst_string (str, _) as cst) -> (
+  | Pexp_constant(Pconst_string (_, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
 #if 0
     (* Terrible hack for format strings *)
