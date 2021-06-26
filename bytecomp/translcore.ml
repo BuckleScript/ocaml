@@ -938,7 +938,7 @@ let try_ids = Hashtbl.create 8
 
 let rec transl_exp e =
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
-#if BS_ONLY then
+#if 1
   transl_exp0 e
 #else
   let eval_once =
@@ -953,7 +953,7 @@ let rec transl_exp e =
 and transl_exp0 e =
   match e.exp_desc with
     Texp_ident(path, _, {val_kind = Val_prim p}) ->
-#if BS_ONLY
+#if 1
 #else
       let public_send = p.prim_name = "%send" in
       if public_send || p.prim_name = "%sendself" then
@@ -1269,7 +1269,7 @@ and transl_exp0 e =
   | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp low, transl_exp high, dir,
            event_before body (transl_exp body))
-#if BS_ONLY
+#if 1
   | Texp_send(expr,met,_) -> 
     let obj = transl_exp expr in   
     begin match met with 
@@ -1303,8 +1303,8 @@ and transl_exp0 e =
             [transl_normal_path path_self; transl_normal_path path], e.exp_loc)
   | Texp_setinstvar(path_self, path, _, expr) ->
       transl_setinstvar e.exp_loc (transl_normal_path path_self) path expr
-  | Texp_override(path_self, modifs) ->
-#if BS_ONLY then 
+  | Texp_override(_path_self, _modifs) ->
+#if 1
       assert false
 #else  
       let cpy = Ident.create "copy" in

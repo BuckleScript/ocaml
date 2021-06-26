@@ -50,9 +50,6 @@ type t =
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (* 30 *)
-#if undefined BS_ONLY then  
-  | Multiple_definition of string * string * string (* 31 *)
-#end  
   | Unused_value_declaration of string      (* 32 *)
   | Unused_open of string                   (* 33 *)
   | Unused_type_declaration of string       (* 34 *)
@@ -72,23 +69,16 @@ type t =
   | Eliminated_optional_arguments of string list (* 48 *)
   | No_cmi_file of string * string option   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
-#if undefined BS_ONLY then  
-  | Expect_tailcall                         (* 51 *)
-#end  
   | Fragile_literal_pattern                 (* 52 *)
   | Misplaced_attribute of string           (* 53 *)
   | Duplicated_attribute of string          (* 54 *)
   | Inlining_impossible of string           (* 55 *)
   | Unreachable_case                        (* 56 *)
   | Ambiguous_pattern of string list        (* 57 *)
-#if undefined BS_ONLY then  
-  | No_cmx_file of string                   (* 58 *)
-#end  
   | Assignment_to_non_mutable_value         (* 59 *)
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
-#if true then
   | Bs_unused_attribute of string           (* 101 *)
   | Bs_polymorphic_comparison               (* 102 *)
   | Bs_ffi_warning of string                (* 103 *)
@@ -98,7 +88,6 @@ type t =
   | Bs_integer_literal_overflow              (* 107 *)
   | Bs_uninterpreted_delimiters of string   (* 108 *)
   | Bs_toplevel_expression_unit             (* 109 *)
-#end        
 ;;
 
 val parse_options : bool -> string -> unit;;
@@ -134,9 +123,9 @@ val mk_lazy: (unit -> 'a) -> 'a Lazy.t
     (** Like [Lazy.of_fun], but the function is applied with
         the warning settings at the time [mk_lazy] is called. *)
 
-#if true then
+
 val has_warnings : bool ref
 val nerrors : int ref
 val message : t -> string 
 val number: t -> int
-#end
+

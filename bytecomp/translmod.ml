@@ -15,7 +15,7 @@
 
 (* Translation from typed abstract syntax to lambda terms,
    for the module language *)
-#if BS_ONLY then 
+#if 1
 module Translobj = struct 
   let oo_wrap _env _b f a = f a 
   let reset_labels () : unit = () 
@@ -371,7 +371,7 @@ let rec bound_value_identifiers = function
 
 
 (* Code to translate class entries in a structure *)
-#if undefined BS_ONLY then
+#if 0
 let transl_class_bindings cl_list =
   let ids = List.map (fun (ci, _) -> ci.ci_id_class) cl_list in
   (ids,
@@ -639,7 +639,7 @@ and transl_structure loc fields cc rootpath final_env = function
               body
           in
           lam, size
-#if undefined BS_ONLY then          
+#if 0
       | Tstr_class cl_list ->
           let (ids, class_bindings) = transl_class_bindings cl_list in
           let body, size =
@@ -983,7 +983,7 @@ let transl_store_structure glob map prims str =
               bindings
               (Lsequence(store_idents Location.none ids,
                          transl_store rootpath (add_idents true ids subst) rem))
-#if BS_ONLY then 
+#if 1
         | Tstr_class _ -> assert false                         
 #else        
         | Tstr_class cl_list ->
@@ -1249,7 +1249,7 @@ let transl_toplevel_item item =
         (fun id modl _loc -> transl_module Tcoerce_none (Some(Pident id)) modl)
         bindings
         (make_sequence toploop_setvalue_id idents)
-#if BS_ONLY then 
+#if 1
   | Tstr_class _ -> assert false         
 #else  
   | Tstr_class cl_list ->
