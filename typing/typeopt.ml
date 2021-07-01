@@ -15,7 +15,7 @@
 
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
-open Path
+
 open Types
 open Asttypes
 open Typedtree
@@ -166,40 +166,6 @@ let array_kind exp = array_type_kind exp.exp_env exp.exp_type
 
 let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
 
-let bigarray_decode_type env ty tbl dfl =
-  match scrape env ty with
-  | Tconstr(Pdot(Pident mod_id, type_name, _), [], _)
-    when Ident.name mod_id = "CamlinternalBigarray" ->
-      begin try List.assoc type_name tbl with Not_found -> dfl end
-  | _ ->
-      dfl
-
-let kind_table =
-  ["float32_elt", Pbigarray_float32;
-   "float64_elt", Pbigarray_float64;
-   "int8_signed_elt", Pbigarray_sint8;
-   "int8_unsigned_elt", Pbigarray_uint8;
-   "int16_signed_elt", Pbigarray_sint16;
-   "int16_unsigned_elt", Pbigarray_uint16;
-   "int32_elt", Pbigarray_int32;
-   "int64_elt", Pbigarray_int64;
-   "int_elt", Pbigarray_caml_int;
-   "nativeint_elt", Pbigarray_native_int;
-   "complex32_elt", Pbigarray_complex32;
-   "complex64_elt", Pbigarray_complex64]
-
-let layout_table =
-  ["c_layout", Pbigarray_c_layout;
-   "fortran_layout", Pbigarray_fortran_layout]
-
-let bigarray_type_kind_and_layout env typ =
-  match scrape env typ with
-  | Tconstr(_p, [_caml_type; elt_type; layout_type], _abbrev) ->
-      (bigarray_decode_type env elt_type kind_table Pbigarray_unknown,
-       bigarray_decode_type env layout_type layout_table
-                            Pbigarray_unknown_layout)
-  | _ ->
-      (Pbigarray_unknown, Pbigarray_unknown_layout)
 
 let value_kind env ty =
   match scrape env ty with
