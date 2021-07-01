@@ -1468,10 +1468,10 @@ let explanation unif t3 t4 ppf =
       fprintf ppf "@,Types for method %s are incompatible" l
   | (Tnil|Tconstr _), Tfield (l, _, _, _) ->
       fprintf ppf
-        "@,@[The first object type has no method %s@]" l
+        "@,@[The first object type has no field %s@]" l
   | Tfield (l, _, _, _), (Tnil|Tconstr _) ->
       fprintf ppf
-        "@,@[The second object type has no method %s@]" l
+        "@,@[The second object type has no field %s@]" l
   | Tnil, Tconstr _ | Tconstr _, Tnil ->
       fprintf ppf
         "@,@[The %s object type has an abstract row, it cannot be closed@]"

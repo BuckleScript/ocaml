@@ -96,7 +96,7 @@ let include_err ppf =
   | CM_Missing_value lab ->
       fprintf ppf "@[The first class type has no instance variable %s@]" lab
   | CM_Missing_method lab ->
-      fprintf ppf "@[The first class type has no method %s@]" lab
+      fprintf ppf "@[The first class type has no field %s@]" lab
   | CM_Hide_public lab ->
      fprintf ppf "@[The public method %s cannot be hidden@]" lab
   | CM_Hide_virtual (k, lab) ->

@@ -4759,13 +4759,13 @@ let report_error env ppf = function
       reset_and_mark_loops ty;
       fprintf ppf
         "@[<v>@[This expression has type@;<1 2>%a@]@,\
-         It has no method %s@]" type_expr ty me;
+         It has no field %s@]" type_expr ty me;
       begin match valid_methods with
         | None -> ()
         | Some valid_methods -> spellcheck ppf me valid_methods
       end
   | Undefined_inherited_method (me, valid_methods) ->
-      fprintf ppf "This expression has no method %s" me;
+      fprintf ppf "This expression has no field %s" me;
       spellcheck ppf me valid_methods;
   | Virtual_class cl ->
       fprintf ppf "Cannot instantiate the virtual class %a"
