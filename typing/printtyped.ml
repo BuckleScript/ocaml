@@ -623,16 +623,6 @@ and class_field_kind i ppf = function
       line i ppf "Virtual\n";
       core_type i ppf t
 
-and class_declaration i ppf x =
-  line i ppf "class_declaration %a\n" fmt_location x.ci_loc;
-  let i = i+1 in
-  line i ppf "pci_virt = %a\n" fmt_virtual_flag x.ci_virt;
-  line i ppf "pci_params =\n";
-  list (i+1) type_parameter ppf x.ci_params;
-  line i ppf "pci_name = \"%s\"\n" x.ci_id_name.txt;
-  line i ppf "pci_expr =\n";
-  class_expr (i+1) ppf x.ci_expr;
-
 and module_type i ppf x =
   line i ppf "module_type %a\n" fmt_location x.mty_loc;
   attributes i ppf x.mty_attributes;
@@ -794,9 +784,7 @@ and structure_item i ppf x =
            fmt_override_flag od.open_override
            fmt_path od.open_path;
       attributes i ppf od.open_attributes
-  | Tstr_class (l) ->
-      line i ppf "Tstr_class\n";
-      list i class_declaration ppf (List.map (fun (cl, _) -> cl) l);
+  | Tstr_class () -> ()
   | Tstr_class_type (l) ->
       line i ppf "Tstr_class_type\n";
       list i class_type_declaration ppf (List.map (fun (_, _, cl) -> cl) l);

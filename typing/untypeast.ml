@@ -161,11 +161,8 @@ let structure_item sub item =
         Pstr_modtype (sub.module_type_declaration sub mtd)
     | Tstr_open od ->
         Pstr_open (sub.open_description sub od)
-    | Tstr_class list ->
-        Pstr_class
-          (List.map
-             (fun (ci, _) -> sub.class_declaration sub ci)
-             list)
+    | Tstr_class _list ->
+        Pstr_class ()
     | Tstr_class_type list ->
         Pstr_class_type
           (List.map

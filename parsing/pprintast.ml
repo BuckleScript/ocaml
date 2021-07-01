@@ -1259,42 +1259,7 @@ and structure_item ctxt f x =
                pp f "@ =@ %a" (module_type ctxt) mt
         ) md
         (item_attributes ctxt) attrs
-  | Pstr_class l ->
-      let extract_class_args cl =
-        let rec loop acc = function
-          | {pcl_desc=Pcl_fun (l, eo, p, cl'); pcl_attributes = []} ->
-              loop ((l,eo,p) :: acc) cl'
-          | cl -> List.rev acc, cl
-        in
-        let args, cl = loop [] cl in
-        let constr, cl =
-          match cl with
-          | {pcl_desc=Pcl_constraint (cl', ct); pcl_attributes = []} ->
-              Some ct, cl'
-          | _ -> None, cl
-        in
-        args, constr, cl
-      in
-      let class_constraint f ct = pp f ": @[%a@] " (class_type ctxt) ct in
-      let class_declaration kwd f
-          ({pci_params=ls; pci_name={txt;_}; _} as x) =
-        let args, constr, cl = extract_class_args x.pci_expr in
-        pp f "@[<2>%s %a%a%s %a%a=@;%a@]%a" kwd
-          virtual_flag x.pci_virt
-          (class_params_def ctxt) ls txt
-          (list (label_exp ctxt)) args
-          (option class_constraint) constr
-          (class_expr ctxt) cl
-          (item_attributes ctxt) x.pci_attributes
-      in begin
-        match l with
-        | [] -> ()
-        | [x] -> class_declaration "class" f x
-        | x :: xs ->
-            pp f "@[<v>%a@,%a@]"
-              (class_declaration "class") x
-              (list ~sep:"@," (class_declaration "and")) xs
-      end
+  | Pstr_class () -> ()
   | Pstr_class_type l -> class_type_declaration_list ctxt f l
   | Pstr_primitive vd ->
       pp f "@[<hov2>external@ %a@ :@ %a@]%a"

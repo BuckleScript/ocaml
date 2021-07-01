@@ -795,8 +795,6 @@ structure_item:
       { let (body, ext) = $1 in mkstr_ext (Pstr_modtype body) ext }
   | open_statement
       { let (body, ext) = $1 in mkstr_ext (Pstr_open body) ext }
-  | class_declarations
-      { let (l, ext) = $1 in mkstr_ext (Pstr_class (List.rev l)) ext }
   | class_type_declarations
       { let (l, ext) = $1 in mkstr_ext (Pstr_class_type (List.rev l)) ext }
   | str_include_statement
@@ -988,35 +986,6 @@ module_type_declaration:
 ;
 /* Class expressions */
 
-class_declarations:
-    class_declaration
-      { let (body, ext) = $1 in ([body], ext) }
-  | class_declarations and_class_declaration
-      { let (l, ext) = $1 in ($2 :: l, ext) }
-;
-class_declaration:
-    CLASS ext_attributes virtual_flag class_type_parameters LIDENT
-    class_fun_binding post_item_attributes
-      { let (ext, attrs) = $2 in
-        Ci.mk (mkrhs $5 5) $6 ~virt:$3 ~params:$4 ~attrs:(attrs@$7)
-            ~loc:(symbol_rloc ()) ~docs:(symbol_docs ())
-      , ext }
-;
-and_class_declaration:
-    AND attributes virtual_flag class_type_parameters LIDENT class_fun_binding
-    post_item_attributes
-      { Ci.mk (mkrhs $5 5) $6 ~virt:$3 ~params:$4
-         ~attrs:($2@$7) ~loc:(symbol_rloc ())
-         ~text:(symbol_text ()) ~docs:(symbol_docs ()) }
-;
-class_fun_binding:
-    EQUAL class_expr
-      { $2 }
-  | COLON class_type EQUAL class_expr
-      { mkclass(Pcl_constraint($4, $2)) }
-  | labeled_simple_pattern class_fun_binding
-      { let (l,o,p) = $1 in mkclass(Pcl_fun(l, o, p, $2)) }
-;
 class_type_parameters:
     /*empty*/                                   { [] }
   | LBRACKET type_parameter_list RBRACKET       { List.rev $2 }
@@ -1558,8 +1527,6 @@ simple_expr:
       { mkexp(Pexp_apply(mkoperator $1 1, [Nolabel,$2])) }
   | BANG simple_expr
       { mkexp(Pexp_apply(mkoperator "!" 1, [Nolabel,$2])) }
-  | NEW ext_attributes class_longident
-      { mkexp_attrs (Pexp_new(mkrhs $3 3)) $2 }
   | LBRACELESS field_expr_list GREATERRBRACE
       { mkexp (Pexp_override $2) }
   | LBRACELESS field_expr_list error

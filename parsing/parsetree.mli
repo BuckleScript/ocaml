@@ -830,8 +830,8 @@ and structure_item_desc =
         (* module type S = MT *)
   | Pstr_open of open_description
         (* open X *)
-  | Pstr_class of class_declaration list
-        (* class c1 = ... and ... and cn = ... *)
+  | Pstr_class of unit
+        (* Dummy AST node *)
   | Pstr_class_type of class_type_declaration list
         (* class type ct1 = ... and ... and ctn = ... *)
   | Pstr_include of include_declaration

@@ -117,9 +117,7 @@ let structure_item sub {str_desc; str_loc; str_env} =
     | Tstr_recmodule list ->
         Tstr_recmodule (List.map (sub.module_binding sub) list)
     | Tstr_modtype x -> Tstr_modtype (sub.module_type_declaration sub x)
-    | Tstr_class list ->
-        Tstr_class
-          (List.map (tuple2 (sub.class_declaration sub) id) list)
+    | Tstr_class () -> Tstr_class ()
     | Tstr_class_type list ->
         Tstr_class_type
           (List.map (tuple3 id id (sub.class_type_declaration sub)) list)

@@ -146,8 +146,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_recmodule list -> List.iter iter_module_binding list
         | Tstr_modtype mtd -> iter_module_type_declaration mtd
         | Tstr_open _ -> ()
-        | Tstr_class list ->
-            List.iter (fun (ci, _) -> iter_class_declaration ci) list
+        | Tstr_class () -> ()
         | Tstr_class_type list ->
             List.iter
               (fun (_, _, ct) -> iter_class_type_declaration ct)
@@ -409,11 +408,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
       end;
       Iter.leave_module_type_declaration mtd
 
-    and iter_class_declaration cd =
-      Iter.enter_class_declaration cd;
-      List.iter iter_type_parameter cd.ci_params;
-      iter_class_expr cd.ci_expr;
-      Iter.leave_class_declaration cd;
 
     and iter_class_description cd =
       Iter.enter_class_description cd;

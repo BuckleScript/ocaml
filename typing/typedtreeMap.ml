@@ -130,14 +130,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_modtype mtd ->
           Tstr_modtype (map_module_type_declaration mtd)
         | Tstr_open od -> Tstr_open od
-        | Tstr_class list ->
-          let list =
-            List.map
-              (fun (ci, string_list) ->
-                 map_class_declaration ci, string_list)
-              list
-          in
-            Tstr_class list
+        | Tstr_class () -> assert false        
         | Tstr_class_type list ->
           let list =
             List.map
@@ -460,12 +453,6 @@ module MakeMap(Map : MapArgument) = struct
     let mtd = {mtd with mtd_type = may_map map_module_type mtd.mtd_type} in
     Map.leave_module_type_declaration mtd
 
-  and map_class_declaration cd =
-    let cd = Map.enter_class_declaration cd in
-    let ci_params = List.map map_type_parameter cd.ci_params in
-    let ci_expr = map_class_expr cd.ci_expr in
-    Map.leave_class_declaration
-      { cd with ci_params = ci_params; ci_expr = ci_expr }
 
   and map_class_description cd =
     let cd = Map.enter_class_description cd in

@@ -631,17 +631,6 @@ and class_field_kind i ppf = function
       line i ppf "Virtual\n";
       core_type i ppf t
 
-and class_declaration i ppf x =
-  line i ppf "class_declaration %a\n" fmt_location x.pci_loc;
-  attributes i ppf x.pci_attributes;
-  let i = i+1 in
-  line i ppf "pci_virt = %a\n" fmt_virtual_flag x.pci_virt;
-  line i ppf "pci_params =\n";
-  list (i+1) type_parameter ppf x.pci_params;
-  line i ppf "pci_name = %a\n" fmt_string_loc x.pci_name;
-  line i ppf "pci_expr =\n";
-  class_expr (i+1) ppf x.pci_expr;
-
 and module_type i ppf x =
   line i ppf "module_type %a\n" fmt_location x.pmty_loc;
   attributes i ppf x.pmty_attributes;
@@ -808,9 +797,7 @@ and structure_item i ppf x =
         fmt_override_flag od.popen_override
         fmt_longident_loc od.popen_lid;
       attributes i ppf od.popen_attributes
-  | Pstr_class (l) ->
-      line i ppf "Pstr_class\n";
-      list i class_declaration ppf l;
+  | Pstr_class () -> ()
   | Pstr_class_type (l) ->
       line i ppf "Pstr_class_type\n";
       list i class_type_declaration ppf l;

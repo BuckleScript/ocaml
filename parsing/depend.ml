@@ -462,8 +462,8 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
       (bv, m)
   | Pstr_open od ->
       (open_module bv od.popen_lid.txt, m)
-  | Pstr_class cdl ->
-      List.iter (add_class_declaration bv) cdl; (bv, m)
+  | Pstr_class () ->
+      (bv,m)
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; (bv, m)
   | Pstr_include incl ->
@@ -522,5 +522,3 @@ and add_class_field bv pcf =
   | Pcf_attribute _ -> ()
   | Pcf_extension e -> handle_extension e
 
-and add_class_declaration bv decl =
-  add_class_expr bv decl.pci_expr
