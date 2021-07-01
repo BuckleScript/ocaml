@@ -50,12 +50,6 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-module ImplementationHooks = Misc.MakeHooks(struct
-    type t = Typedtree.structure * Typedtree.module_coercion
-  end)
-module InterfaceHooks = Misc.MakeHooks(struct
-    type t = Typedtree.signature
-  end)
 
 #if true
 let should_hide : (Typedtree.module_binding -> bool) ref = ref (fun _ -> false)
@@ -1571,33 +1565,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_open sod ->
         let (_path, newenv, od) = type_open ~toplevel env sod in
         Tstr_open od, [], newenv
-    | Pstr_class cl ->
-        List.iter
-          (fun {pci_name} -> check_name check_type names pci_name)
-          cl;
-        let (classes, new_env) = Typeclass.class_declarations env cl in
-        Tstr_class
-          (List.map (fun cls ->
-               (cls.Typeclass.cls_info,
-                cls.Typeclass.cls_pub_methods)) classes),
-(* TODO: check with Jacques why this is here
-      Tstr_class_type
-          (List.map (fun (_,_, i, d, _,_,_,_,_,_,c) -> (i, c)) classes) ::
-      Tstr_type
-          (List.map (fun (_,_,_,_, i, d, _,_,_,_,_) -> (i, d)) classes) ::
-      Tstr_type
-          (List.map (fun (_,_,_,_,_,_, i, d, _,_,_) -> (i, d)) classes) ::
-*)
-        List.flatten
-          (map_rec
-            (fun rs cls ->
-              let open Typeclass in
-              [Sig_class(cls.cls_id, cls.cls_decl, rs);
-               Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
-               Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
-               Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
-             classes []),
-        new_env
+    | Pstr_class () ->
+      assert false
     | Pstr_class_type cl ->
         List.iter
           (fun {pci_name} -> check_name check_type names pci_name)
@@ -1682,9 +1651,6 @@ let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   let (str, sg, env) =
     type_structure ~toplevel:true false None env s Location.none in
-  let (str, _coerce) = ImplementationHooks.apply_hooks
-      { Misc.sourcefile = "//toplevel//" } (str, Tcoerce_none)
-  in
   (str, sg, env)
 
 let type_module_alias = type_module ~alias:true true false None
@@ -1802,12 +1768,8 @@ let type_implementation_more ?check_exists sourcefile outputprefix modulename in
   end else begin
     let sourceintf =
       Filename.remove_extension sourcefile ^ !Config.interface_suffix in
-#if undefined BS_NO_COMPILER_PATCH then 
     let mli_status = !Clflags.assume_no_mli in 
     if (mli_status = Clflags.Mli_na && Sys.file_exists sourceintf) || (mli_status = Clflags.Mli_exists) then begin
-#else
-    if Sys.file_exists sourceintf then begin
-#end      
       let intf_file =
         try
           find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
@@ -1861,86 +1823,15 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     type_implementation_more sourcefile outputprefix modulename initial_env ast in 
   a,b    
 
-let type_implementation sourcefile outputprefix modulename initial_env ast =
-  ImplementationHooks.apply_hooks { Misc.sourcefile }
-    (type_implementation sourcefile outputprefix modulename initial_env ast)
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname
     (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi)
 
-let type_interface sourcefile env ast =
-  InterfaceHooks.apply_hooks { Misc.sourcefile } (transl_signature env ast)
 
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
 
-let rec package_signatures subst = function
-    [] -> []
-  | (name, sg) :: rem ->
-      let sg' = Subst.signature subst sg in
-      let oldid = Ident.create_persistent name
-      and newid = Ident.create name in
-      Sig_module(newid, {md_type=Mty_signature sg';
-                         md_attributes=[];
-                         md_loc=Location.none;
-                        },
-                 Trec_not) ::
-      package_signatures (Subst.add_module oldid (Pident newid) subst) rem
-
-let package_units initial_env objfiles cmifile modulename =
-  (* Read the signatures of the units *)
-  let units =
-    List.map
-      (fun f ->
-         let pref = chop_extensions f in
-         let modname = String.capitalize_ascii(Filename.basename pref) in
-         let sg = Env.read_signature modname (pref ^ ".cmi") in
-         if Filename.check_suffix f ".cmi" &&
-            not(Mtype.no_code_needed_sig (Lazy.force Env.initial_safe_string) sg)
-         then raise(Error(Location.none, Env.empty,
-                          Implementation_is_required f));
-         (modname, Env.read_signature modname (pref ^ ".cmi")))
-      objfiles in
-  (* Compute signature of packaged unit *)
-  Ident.reinit();
-  let sg = package_signatures Subst.identity units in
-  (* See if explicit interface is provided *)
-  let prefix = Filename.remove_extension cmifile in
-  let mlifile = prefix ^ !Config.interface_suffix in
-#if undefined BS_NO_COMPILER_PATCH then
-  let mli_status = !Clflags.assume_no_mli in 
-  if (mli_status = Clflags.Mli_na && Sys.file_exists mlifile) || (mli_status = Clflags.Mli_exists) then begin
-#else
-  if Sys.file_exists mlifile then begin
-#end  
-    if not (Sys.file_exists cmifile) then begin
-      raise(Error(Location.in_file mlifile, Env.empty,
-                  Interface_not_compiled mlifile))
-    end;
-    let dclsig = Env.read_signature modulename cmifile in
-    Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
-      (Cmt_format.Packed (sg, objfiles)) None initial_env  None ;
-    Includemod.compunit initial_env "(obtained by packing)" sg mlifile dclsig
-  end else begin
-    (* Determine imports *)
-    let unit_names = List.map fst units in
-    let imports =
-      List.filter
-        (fun (name, _crc) -> not (List.mem name unit_names))
-        (Env.imports()) in
-    (* Write packaged signature *)
-    if not !Clflags.dont_write_files then begin
-      let cmi =
-        Env.save_signature_with_imports ~deprecated:None
-          sg modulename
-          (prefix ^ ".cmi") imports
-      in
-      Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
-        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env (Some cmi)
-    end;
-    Tcoerce_none
-  end
 
 (* Error report *)
 
