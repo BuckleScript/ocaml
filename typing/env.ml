@@ -1167,11 +1167,9 @@ and lookup_module ~load ?loc lid env : Path.t =
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
           raise Recmodule
-#if true                  
         | Mty_alias (_, Path.Pident id) ->   
           if !Config.bs_only && not !Clflags.transparent_modules && Ident.persistent id then 
             find_pers_struct (Ident.name id) |> ignore 
-#end            
         | _ -> ()
         end;
         report_deprecated ?loc p
