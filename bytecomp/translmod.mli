@@ -17,7 +17,7 @@
    for the module language *)
 
 open Typedtree
-open Lambda
+
 
 val eval_rec_bindings:
       ((Ident.t * (Lambda.lambda * Lambda.lambda) option * Lambda.lambda) list  -> 
@@ -25,24 +25,7 @@ val eval_rec_bindings:
 
 val transl_implementation:
       string -> structure * module_coercion -> Lambda.program
-val transl_store_phrases: string -> structure -> int * lambda
-val transl_store_implementation:
-      string -> structure * module_coercion -> Lambda.program
 
-val transl_implementation_flambda:
-  string -> structure * module_coercion -> Lambda.program
-
-val transl_toplevel_definition: structure -> lambda
-val transl_package:
-      Ident.t option list -> Ident.t -> module_coercion -> lambda
-val transl_store_package:
-      Ident.t option list -> Ident.t -> module_coercion -> int * lambda
-
-val transl_package_flambda:
-      Ident.t option list -> module_coercion -> int * lambda
-
-val toplevel_name: Ident.t -> string
-val nat_toplevel_name: Ident.t -> Ident.t * int
 
 val primitive_declarations: Primitive.description list ref
 
@@ -50,7 +33,7 @@ type error =
   Circular_dependency of Ident.t
 | Conflicting_inline_attributes
 
-exception Error of Location.t * error
+(* exception Error of Location.t * error *)
 
 val report_error: Format.formatter -> error -> unit
 
