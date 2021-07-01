@@ -31,7 +31,6 @@ type error =
 
 exception Error of Location.t * error
 let wrap_single_field_record = ref (fun _ _ lam -> lam)
-let use_dup_for_constant_arrays_bigger_than = 4
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
@@ -556,62 +555,6 @@ else create_hashtable 57 [
   "%int64_to_int32", Pcvtbint(Pint64, Pint32);
   "%int64_of_nativeint", Pcvtbint(Pnativeint, Pint64);
   "%int64_to_nativeint", Pcvtbint(Pint64, Pnativeint);
-  "%caml_ba_ref_1",
-    Pbigarrayref(false, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_ref_2",
-    Pbigarrayref(false, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_ref_3",
-    Pbigarrayref(false, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_set_1",
-    Pbigarrayset(false, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_set_2",
-    Pbigarrayset(false, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_set_3",
-    Pbigarrayset(false, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_unsafe_ref_1",
-    Pbigarrayref(true, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_unsafe_ref_2",
-    Pbigarrayref(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_unsafe_ref_3",
-    Pbigarrayref(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_unsafe_set_1",
-    Pbigarrayset(true, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_unsafe_set_2",
-    Pbigarrayset(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_unsafe_set_3",
-    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
-  "%caml_ba_dim_1", Pbigarraydim(1);
-  "%caml_ba_dim_2", Pbigarraydim(2);
-  "%caml_ba_dim_3", Pbigarraydim(3);
-  "%caml_string_get16", Pstring_load_16(false);
-  "%caml_string_get16u", Pstring_load_16(true);
-  "%caml_string_get32", Pstring_load_32(false);
-  "%caml_string_get32u", Pstring_load_32(true);
-  "%caml_string_get64", Pstring_load_64(false);
-  "%caml_string_get64u", Pstring_load_64(true);
-  "%caml_string_set16", Pstring_set_16(false);
-  "%caml_string_set16u", Pstring_set_16(true);
-  "%caml_string_set32", Pstring_set_32(false);
-  "%caml_string_set32u", Pstring_set_32(true);
-  "%caml_string_set64", Pstring_set_64(false);
-  "%caml_string_set64u", Pstring_set_64(true);
-  "%caml_bigstring_get16", Pbigstring_load_16(false);
-  "%caml_bigstring_get16u", Pbigstring_load_16(true);
-  "%caml_bigstring_get32", Pbigstring_load_32(false);
-  "%caml_bigstring_get32u", Pbigstring_load_32(true);
-  "%caml_bigstring_get64", Pbigstring_load_64(false);
-  "%caml_bigstring_get64u", Pbigstring_load_64(true);
-  "%caml_bigstring_set16", Pbigstring_set_16(false);
-  "%caml_bigstring_set16u", Pbigstring_set_16(true);
-  "%caml_bigstring_set32", Pbigstring_set_32(false);
-  "%caml_bigstring_set32u", Pbigstring_set_32(true);
-  "%caml_bigstring_set64", Pbigstring_set_64(false);
-  "%caml_bigstring_set64u", Pbigstring_set_64(true);
-  "%bswap16", Pbswap16;
-  "%bswap_int32", Pbbswap(Pint32);
-  "%bswap_int64", Pbbswap(Pint64);
-  "%bswap_native", Pbbswap(Pnativeint);
-  "%int_as_pointer", Pint_as_pointer;
   "%opaque", Popaque;
 ])
 
@@ -697,14 +640,6 @@ let specialize_primitive p env ty (* ~has_constant_constructor *) =
         Parrayrefs(glb_array_type t (array_type_kind env p1))
     | (Parraysets t, p1 :: _) ->
         Parraysets(glb_array_type t (array_type_kind env p1))
-    | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
-       p1 :: _) ->
-        let (k, l) = bigarray_type_kind_and_layout env p1 in
-        Pbigarrayref(unsafe, n, k, l)
-    | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
-       p1 :: _) ->
-        let (k, l) = bigarray_type_kind_and_layout env p1 in
-        Pbigarrayset(unsafe, n, k, l)
     | (Pmakeblock(tag, tag_info, mut, None), fields) ->
         let shape = List.map (Typeopt.value_kind env) fields in
         Pmakeblock(tag, tag_info, mut, Some shape)
@@ -872,41 +807,17 @@ let rec push_defaults loc bindings cases partial =
 
 (* Insertion of debugging events *)
 
-let event_before exp lam = match lam with
-| Lstaticraise (_,_) -> lam
-| _ ->
-  if !Clflags.record_event_when_debug && !Clflags.debug && not !Config.bs_only
-  then Levent(lam, {lev_loc = exp.exp_loc;
-                    lev_kind = Lev_before;
-                    lev_repr = None;
-                    lev_env = Env.summary exp.exp_env})
-  else lam
+let [@inline] event_before _exp lam = lam
 
-let event_after exp lam =
-  if !Clflags.record_event_when_debug && !Clflags.debug && not !Config.bs_only
-  then Levent(lam, {lev_loc = exp.exp_loc;
-                    lev_kind = Lev_after exp.exp_type;
-                    lev_repr = None;
-                    lev_env = Env.summary exp.exp_env})
-  else lam
+let [@inline] event_after _exp lam = lam
 
-let event_function exp lam =
-  if !Clflags.record_event_when_debug && !Clflags.debug && not !Config.bs_only then
-    let repr = Some (ref 0) in
-    let (info, body) = lam repr in
-    (info,
-     Levent(body, {lev_loc = exp.exp_loc;
-                   lev_kind = Lev_function;
-                   lev_repr = repr;
-                   lev_env = Env.summary exp.exp_env}))
-  else
-    lam None
+let [@inline] event_function _exp lam = lam None
 
 let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
   | Pccall _ | Pstringrefs  | Pbytesrefs | Pbytessets | Parrayrefs _ |
-    Parraysets _ | Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
+    Parraysets _  | Pduprecord _ | Pdirapply |
     Prevapply -> true
   | _ -> false
 
@@ -1207,53 +1118,8 @@ and transl_exp0 e =
   | Texp_array expr_list ->
       let kind = array_kind e in
       let ll = transl_list expr_list in
-#if true       
-      if !Config.bs_only then 
-         Lprim(Pmakearray (kind, Mutable), ll, e.exp_loc)
-      else   
-#end
-      begin try
-        (* For native code the decision as to which compilation strategy to
-           use is made later.  This enables the Flambda passes to lift certain
-           kinds of array definitions to symbols. *)
-        (* Deactivate constant optimization if array is small enough *)
-        if List.length ll <= use_dup_for_constant_arrays_bigger_than
-        then begin
-          raise Not_constant
-        end;
-        begin match List.map extract_constant ll with
-        | exception Not_constant when kind = Pfloatarray ->
-            (* We cannot currently lift [Pintarray] arrays safely in Flambda
-               because [caml_modify] might be called upon them (e.g. from
-               code operating on polymorphic arrays, or functions such as
-               [caml_array_blit].
-               To avoid having different Lambda code for
-               bytecode/Closure vs.  Flambda, we always generate
-               [Pduparray] here, and deal with it in [Bytegen] (or in
-               the case of Closure, in [Cmmgen], which already has to
-               handle [Pduparray Pmakearray Pfloatarray] in the case
-               where the array turned out to be inconstant).
-               When not [Pfloatarray], the exception propagates to the handler
-               below. *)
-            let imm_array =
-              Lprim (Pmakearray (kind, Immutable), ll, e.exp_loc)
-            in
-            Lprim (Pduparray (kind, Mutable), [imm_array], e.exp_loc)
-        | cl ->
-            let imm_array =
-              match kind with
-              | Paddrarray | Pintarray ->
-                  Lconst(Const_block(0, Lambda.Blk_array, cl)) (* ATTENTION: ? [|1;2;3;4|]*)
-              | Pfloatarray ->
-                  Lconst(Const_float_array(List.map extract_float cl))
-              | Pgenarray ->
-                  raise Not_constant    (* can this really happen? *)
-            in
-            Lprim (Pduparray (kind, Mutable), [imm_array], e.exp_loc)
-        end
-      with Not_constant ->
-        Lprim(Pmakearray (kind, Mutable), ll, e.exp_loc)
-      end
+      Lprim(Pmakearray (kind, Mutable), ll, e.exp_loc)
+
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,
                   event_before ifso (transl_exp ifso),
@@ -1322,18 +1188,9 @@ and transl_exp0 e =
              modifs
              (Lvar cpy))
 #end             
-  | Texp_letmodule(id, loc, modl, body) ->
+  | Texp_letmodule(id, _loc, modl, body) ->
       let defining_expr =
-#if true        
-        if !Config.bs_only then !transl_module Tcoerce_none None modl
-        else
-#end        
-        Levent (!transl_module Tcoerce_none None modl, {
-          lev_loc = loc.loc;
-          lev_kind = Lev_module_definition id;
-          lev_repr = None;
-          lev_env = Env.summary Env.empty;
-        })
+         !transl_module Tcoerce_none None modl
       in
       Llet(Strict, Pgenval, id, defining_expr, transl_exp body)
   | Texp_letexception(cd, body) ->
@@ -1455,8 +1312,6 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
     match funct with
       Lsend(k, lmet, lobj, largs, loc) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
-    | Levent(Lsend(k, lmet, lobj, largs, loc), _) ->
-        Lsend(k, lmet, lobj, largs @ args, loc)
     | Lapply ap ->
         Lapply {ap with ap_args = ap.ap_args @ args; ap_loc = loc}
     | lexp ->
@@ -1489,10 +1344,6 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
             Lfunction{kind = Curried; params = ids; body = lam; attr; loc} ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
-                        loc}
-          | Levent(Lfunction{kind = Curried; params = ids;
-                             body = lam; attr; loc}, _) ->
               Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
                         loc}
           | lam ->

@@ -170,9 +170,6 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
-  (* Bitvect operations *)
-  | Pbittest
-  (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
   | Pcvtbint of boxed_integer (*source*) * boxed_integer (*destination*)
@@ -189,33 +186,7 @@ type primitive =
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
   | Pbintcomp of boxed_integer * comparison
-  (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
-  | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
-  | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
-  (* size of the nth dimension of a big array *)
-  | Pbigarraydim of int
-  (* load/set 16,32,64 bits from a string: (unsafe)*)
-  | Pstring_load_16 of bool
-  | Pstring_load_32 of bool
-  | Pstring_load_64 of bool
-  | Pstring_set_16 of bool
-  | Pstring_set_32 of bool
-  | Pstring_set_64 of bool
-  (* load/set 16,32,64 bits from a
-     (char, int8_unsigned_elt, c_layout) Bigarray.Array1.t : (unsafe) *)
-  | Pbigstring_load_16 of bool
-  | Pbigstring_load_32 of bool
-  | Pbigstring_load_64 of bool
-  | Pbigstring_set_16 of bool
-  | Pbigstring_set_32 of bool
-  | Pbigstring_set_64 of bool
-  (* Compile time constants *)
   | Pctconst of compile_time_constant
-  (* byte swap *)
-  | Pbswap16
-  | Pbbswap of boxed_integer
-  (* Integer to external pointer *)
-  | Pint_as_pointer
   (* Inhibition of optimisation *)
   | Popaque
 
@@ -234,19 +205,6 @@ and array_kind =
 and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
 
-and bigarray_kind =
-    Pbigarray_unknown
-  | Pbigarray_float32 | Pbigarray_float64
-  | Pbigarray_sint8 | Pbigarray_uint8
-  | Pbigarray_sint16 | Pbigarray_uint16
-  | Pbigarray_int32 | Pbigarray_int64
-  | Pbigarray_caml_int | Pbigarray_native_int
-  | Pbigarray_complex32 | Pbigarray_complex64
-
-and bigarray_layout =
-    Pbigarray_unknown_layout
-  | Pbigarray_c_layout
-  | Pbigarray_fortran_layout
 
 and raise_kind =
   | Raise_regular
@@ -320,8 +278,6 @@ type lambda =
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
-  | Levent of lambda * lambda_event
-  | Lifused of Ident.t * lambda
 
 and lfunction =
   { kind: function_kind;
@@ -452,12 +408,9 @@ let make_key e =
         Lassign (x,tr_rec env e)
     | Lsend (m,e1,e2,es,_loc) ->
         Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
-    | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
     | Lfor _ | Lwhile _
-(* Beware: (PR#6412) the event argument to Levent
-   may include cyclic structure of type Type.typexpr *)
-    | Levent _  ->
+     ->
         raise_notrace Not_simple
 
   and tr_recs env es = List.map (tr_rec env) es
@@ -539,11 +492,6 @@ let iter f = function
       f e
   | Lsend (_k, met, obj, args, _) ->
       List.iter f (met::obj::args)
-  | Levent (lam, _evt) ->
-      f lam
-  | Lifused (_v, e) ->
-      f e
-
 
 module IdentSet = Set.Make(Ident)
 
@@ -570,7 +518,8 @@ let free_ids get l =
     | Lvar _ | Lconst _ | Lapply _
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
-    | Lsend _ | Levent _ | Lifused _ -> ()
+    | Lsend _
+     -> ()
   in free l; !fv
 
 let free_variables l =
@@ -598,7 +547,6 @@ let staticfail = Lstaticraise (0,[])
 let rec is_guarded = function
   | Lifthenelse(_cond, _body, Lstaticraise (0,[])) -> true
   | Llet(_str, _k, _id, _lam, body) -> is_guarded body
-  | Levent(lam, _ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
@@ -606,8 +554,6 @@ let rec patch_guarded patch = function
       Lifthenelse (cond, body, patch)
   | Llet(str, k, id, lam, body) ->
       Llet (str, k, id, lam, patch_guarded patch body)
-  | Levent(lam, ev) ->
-      Levent (patch_guarded patch lam, ev)
   | _ -> fatal_error "Lambda.patch_guarded"
 
 (* Translate an access path *)
@@ -682,8 +628,6 @@ let subst_lambda s lam =
   | Lassign(id, e) -> Lassign(id, subst e)
   | Lsend (k, met, obj, args, loc) ->
       Lsend (k, subst met, subst obj, List.map subst args, loc)
-  | Levent (lam, evt) -> Levent (subst lam, evt)
-  | Lifused (v, e) -> Lifused (v, subst e)
   and subst_decl (id, exp) = (id, subst exp)
   and subst_case (key, case) = (key, subst case)
   and subst_strcase (key, case) = (key, subst case)
@@ -749,10 +693,6 @@ let rec map f lam =
         Lassign (v, map f e)
     | Lsend (k, m, o, el, loc) ->
         Lsend (k, map f m, map f o, List.map (map f) el, loc)
-    | Levent (l, ev) ->
-        Levent (map f l, ev)
-    | Lifused (v, e) ->
-        Lifused (v, map f e)
   in
   f lam
 
@@ -781,9 +721,7 @@ let raise_kind = function
 let lam_of_loc kind loc =
   let loc_start = loc.Location.loc_start in
   let (file, lnum, cnum) = Location.get_pos_info loc_start in
-#if true  
   let file = Filename.basename file in  
-#end
   let enum = loc.Location.loc_end.Lexing.pos_cnum -
       loc_start.Lexing.pos_cnum + cnum in
   match kind with

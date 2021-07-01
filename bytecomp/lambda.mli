@@ -208,8 +208,6 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
-  (* Bitvect operations *)
-  | Pbittest
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
@@ -227,33 +225,7 @@ type primitive =
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
   | Pbintcomp of boxed_integer * comparison
-  (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
-  | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
-  | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
-  (* size of the nth dimension of a big array *)
-  | Pbigarraydim of int
-  (* load/set 16,32,64 bits from a string: (unsafe)*)
-  | Pstring_load_16 of bool
-  | Pstring_load_32 of bool
-  | Pstring_load_64 of bool
-  | Pstring_set_16 of bool
-  | Pstring_set_32 of bool
-  | Pstring_set_64 of bool
-  (* load/set 16,32,64 bits from a
-     (char, int8_unsigned_elt, c_layout) Bigarray.Array1.t : (unsafe) *)
-  | Pbigstring_load_16 of bool
-  | Pbigstring_load_32 of bool
-  | Pbigstring_load_64 of bool
-  | Pbigstring_set_16 of bool
-  | Pbigstring_set_32 of bool
-  | Pbigstring_set_64 of bool
-  (* Compile time constants *)
   | Pctconst of compile_time_constant
-  (* byte swap *)
-  | Pbswap16
-  | Pbbswap of boxed_integer
-  (* Integer to external pointer *)
-  | Pint_as_pointer
   (* Inhibition of optimisation *)
   | Popaque
 
@@ -272,19 +244,6 @@ and block_shape =
 and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
 
-and bigarray_kind =
-    Pbigarray_unknown
-  | Pbigarray_float32 | Pbigarray_float64
-  | Pbigarray_sint8 | Pbigarray_uint8
-  | Pbigarray_sint16 | Pbigarray_uint16
-  | Pbigarray_int32 | Pbigarray_int64
-  | Pbigarray_caml_int | Pbigarray_native_int
-  | Pbigarray_complex32 | Pbigarray_complex64
-
-and bigarray_layout =
-    Pbigarray_unknown_layout
-  | Pbigarray_c_layout
-  | Pbigarray_fortran_layout
 
 and raise_kind =
   | Raise_regular
@@ -360,8 +319,6 @@ type lambda =
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
-  | Levent of lambda * lambda_event
-  | Lifused of Ident.t * lambda
 
 and lfunction =
   { kind: function_kind;

@@ -77,27 +77,6 @@ let boxed_integer_mark name = function
 let print_boxed_integer name ppf bi =
   fprintf ppf "%s" (boxed_integer_mark name bi);;
 
-let print_bigarray name unsafe kind ppf layout =
-  fprintf ppf "Bigarray.%s[%s,%s]"
-    (if unsafe then "unsafe_"^ name else name)
-    (match kind with
-     | Pbigarray_unknown -> "generic"
-     | Pbigarray_float32 -> "float32"
-     | Pbigarray_float64 -> "float64"
-     | Pbigarray_sint8 -> "sint8"
-     | Pbigarray_uint8 -> "uint8"
-     | Pbigarray_sint16 -> "sint16"
-     | Pbigarray_uint16 -> "uint16"
-     | Pbigarray_int32 -> "int32"
-     | Pbigarray_int64 -> "int64"
-     | Pbigarray_caml_int -> "camlint"
-     | Pbigarray_native_int -> "nativeint"
-     | Pbigarray_complex32 -> "complex32"
-     | Pbigarray_complex64 -> "complex64")
-    (match layout with
-    |  Pbigarray_unknown_layout -> "unknown"
-     | Pbigarray_c_layout -> "C"
-     | Pbigarray_fortran_layout -> "Fortran")
 
 let record_rep ppf r =
   match r with
@@ -285,7 +264,6 @@ let primitive ppf = function
      fprintf ppf "sys.constant_%s" const_name
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
-  | Pbittest -> fprintf ppf "testbit"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
   | Pcvtbint (bi1, bi2) -> print_boxed_integer_conversion ppf bi1 bi2
@@ -313,50 +291,6 @@ let primitive ppf = function
   | Pbintcomp(bi, Cgt) -> print_boxed_integer ">" ppf bi
   | Pbintcomp(bi, Cle) -> print_boxed_integer "<=" ppf bi
   | Pbintcomp(bi, Cge) -> print_boxed_integer ">=" ppf bi
-  | Pbigarrayref(unsafe, _n, kind, layout) ->
-      print_bigarray "get" unsafe kind ppf layout
-  | Pbigarrayset(unsafe, _n, kind, layout) ->
-      print_bigarray "set" unsafe kind ppf layout
-  | Pbigarraydim(n) -> fprintf ppf "Bigarray.dim_%i" n
-  | Pstring_load_16(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_get16"
-     else fprintf ppf "string.get16"
-  | Pstring_load_32(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_get32"
-     else fprintf ppf "string.get32"
-  | Pstring_load_64(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_get64"
-     else fprintf ppf "string.get64"
-  | Pstring_set_16(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_set16"
-     else fprintf ppf "string.set16"
-  | Pstring_set_32(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_set32"
-     else fprintf ppf "string.set32"
-  | Pstring_set_64(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_set64"
-     else fprintf ppf "string.set64"
-  | Pbigstring_load_16(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_get16"
-     else fprintf ppf "bigarray.array1.get16"
-  | Pbigstring_load_32(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_get32"
-     else fprintf ppf "bigarray.array1.get32"
-  | Pbigstring_load_64(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_get64"
-     else fprintf ppf "bigarray.array1.get64"
-  | Pbigstring_set_16(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_set16"
-     else fprintf ppf "bigarray.array1.set16"
-  | Pbigstring_set_32(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_set32"
-     else fprintf ppf "bigarray.array1.set32"
-  | Pbigstring_set_64(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_set64"
-     else fprintf ppf "bigarray.array1.set64"
-  | Pbswap16 -> fprintf ppf "bswap16"
-  | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
-  | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Popaque -> fprintf ppf "opaque"
 
 let name_of_primitive = function
@@ -425,7 +359,6 @@ let name_of_primitive = function
   | Pctconst _ -> "Pctconst"
   | Pisint -> "Pisint"
   | Pisout -> "Pisout"
-  | Pbittest -> "Pbittest"
   | Pbintofint _ -> "Pbintofint"
   | Pintofbint _ -> "Pintofbint"
   | Pcvtbint _ -> "Pcvtbint"
@@ -442,24 +375,6 @@ let name_of_primitive = function
   | Plsrbint _ -> "Plsrbint"
   | Pasrbint _ -> "Pasrbint"
   | Pbintcomp _ -> "Pbintcomp"
-  | Pbigarrayref _ -> "Pbigarrayref"
-  | Pbigarrayset _ -> "Pbigarrayset"
-  | Pbigarraydim _ -> "Pbigarraydim"
-  | Pstring_load_16 _ -> "Pstring_load_16"
-  | Pstring_load_32 _ -> "Pstring_load_32"
-  | Pstring_load_64 _ -> "Pstring_load_64"
-  | Pstring_set_16 _ -> "Pstring_set_16"
-  | Pstring_set_32 _ -> "Pstring_set_32"
-  | Pstring_set_64 _ -> "Pstring_set_64"
-  | Pbigstring_load_16 _ -> "Pbigstring_load_16"
-  | Pbigstring_load_32 _ -> "Pbigstring_load_32"
-  | Pbigstring_load_64 _ -> "Pbigstring_load_64"
-  | Pbigstring_set_16 _ -> "Pbigstring_set_16"
-  | Pbigstring_set_32 _ -> "Pbigstring_set_32"
-  | Pbigstring_set_64 _ -> "Pbigstring_set_64"
-  | Pbswap16 -> "Pbswap16"
-  | Pbbswap _ -> "Pbbswap"
-  | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
 
 let function_attribute ppf { inline; specialise; is_a_functor; stub } =
@@ -635,25 +550,6 @@ let rec lam ppf = function
         if k = Self then "self" else if k = Cached then "cache" else "" in
 #end        
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
-  | Levent(expr, ev) ->
-      let kind =
-       match ev.lev_kind with
-       | Lev_before -> "before"
-       | Lev_after _  -> "after"
-       | Lev_function -> "funct-body"
-       | Lev_pseudo -> "pseudo"
-       | Lev_module_definition ident ->
-         Format.asprintf "module-defn(%a)" Ident.print ident
-      in
-      fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
-              ev.lev_loc.Location.loc_start.Lexing.pos_fname
-              ev.lev_loc.Location.loc_start.Lexing.pos_lnum
-              (if ev.lev_loc.Location.loc_ghost then "<ghost>" else "")
-              ev.lev_loc.Location.loc_start.Lexing.pos_cnum
-              ev.lev_loc.Location.loc_end.Lexing.pos_cnum
-              lam expr
-  | Lifused(id, expr) ->
-      fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
 
 and sequence ppf = function
   | Lsequence(l1, l2) ->

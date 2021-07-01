@@ -2571,24 +2571,7 @@ let combine_array names loc arg kind partial ctx def
 
 (* Insertion of debugging events *)
 
-let rec event_branch repr lam =
-  begin match lam, repr with
-    (_, None) ->
-      lam
-  | (Levent(lam', ev), Some r) ->
-      incr r;
-      Levent(lam', {lev_loc = ev.lev_loc;
-                    lev_kind = ev.lev_kind;
-                    lev_repr = repr;
-                    lev_env = ev.lev_env})
-  | (Llet(str, k, id, lam, body), _) ->
-      Llet(str, k, id, lam, event_branch repr body)
-  | Lstaticraise _,_ -> lam
-  | (_, Some _) ->
-      Printlambda.lambda Format.str_formatter lam ;
-      fatal_error
-        ("Matching.event_branch: "^Format.flush_str_formatter ())
-  end
+let [@inline] event_branch _repr lam = lam
 
 
 (*
@@ -3091,7 +3074,6 @@ let rec map_return f = function
   | Lifthenelse (lcond, lthen, lelse) ->
       Lifthenelse (lcond, map_return f lthen, map_return f lelse)
   | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
-  | Levent (l, ev) -> Levent (map_return f l, ev)
   | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
   | Lstaticcatch (l1, b, l2) ->
       Lstaticcatch (map_return f l1, b, map_return f l2)

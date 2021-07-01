@@ -370,16 +370,6 @@ let rec bound_value_identifiers = function
   | _ :: rem -> bound_value_identifiers rem
 
 
-(* Code to translate class entries in a structure *)
-#if 0
-let transl_class_bindings cl_list =
-  let ids = List.map (fun (ci, _) -> ci.ci_id_class) cl_list in
-  (ids,
-   List.map
-     (fun ({ci_id_class=id; ci_expr=cl; ci_virt=vf}, meths) ->
-       (id, Translclass.transl_class ids id meths cl vf))
-     cl_list)
-#end
 (* Compile one or more functors, merging curried functors to produce
    multi-argument functors.  Any [@inline] attribute on a functor that is
    merged must be consistent with any other [@inline] attribute(s) on the
@@ -542,14 +532,7 @@ and transl_structure loc fields cc rootpath final_env = function
       (* This debugging event provides information regarding the structure
          items. It is ignored by the OCaml debugger but is used by
          Js_of_ocaml to preserve variable names. *)
-      (if !Clflags.debug && not !Config.bs_only then
-         Levent(body,
-                {lev_loc = loc;
-                 lev_kind = Lev_pseudo;
-                 lev_repr = None;
-                 lev_env = Env.summary final_env})
-       else
-         body),
+      body,
       size
   | item :: rem ->
       match item.str_desc with
@@ -597,18 +580,6 @@ and transl_structure loc fields cc rootpath final_env = function
             Translattribute.add_inline_attribute module_body mb.mb_loc
                                                  mb.mb_attributes
           in
-          let module_body =
-#if true            
-            if !Config.bs_only then module_body
-            else
-#end            
-            Levent (module_body, {
-              lev_loc = mb.mb_loc;
-              lev_kind = Lev_module_definition id;
-              lev_repr = None;
-              lev_env = Env.summary Env.empty;
-            })
-          in
           Llet(pure_module mb.mb_expr, Pgenval, id,
                module_body,
                body), size
@@ -621,20 +592,10 @@ and transl_structure loc fields cc rootpath final_env = function
           in
           let lam =
             compile_recmodule
-              (fun id modl loc ->
-                 let module_body =
+              (fun id modl _loc ->
+
                    transl_module Tcoerce_none (field_path rootpath id) modl
-                 in
-#if true            
-                 if !Config.bs_only then module_body
-                 else
-#end                    
-                 Levent (module_body, {
-                   lev_loc = loc;
-                   lev_kind = Lev_module_definition id;
-                   lev_repr = None;
-                   lev_env = Env.summary Env.empty;
-                 }))
+              )
               bindings
               body
           in
