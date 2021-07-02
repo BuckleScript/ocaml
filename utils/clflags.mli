@@ -1,6 +1,6 @@
 val output_name : string option ref
 val include_dirs : string list ref
-val print_types : bool ref
+
 val debug : bool ref
 val fast : bool ref
 val classic : bool ref
@@ -36,13 +36,12 @@ val color : Misc.Color.setting option ref
 val unboxed_types : bool ref
 
 
-#if 1
+
 type mli_status =  Mli_exists | Mli_non_exists
 val assume_no_mli : mli_status ref
-val record_event_when_debug : bool ref
 val bs_vscode : bool
 val dont_record_crc_unit : string option ref
 val bs_gentype : string option ref
 val no_assert_false : bool ref
 val dump_location : bool ref
-#end
+

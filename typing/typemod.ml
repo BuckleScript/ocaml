@@ -1755,17 +1755,10 @@ let type_implementation_more ?check_exists sourcefile outputprefix modulename in
   try
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
-  if !Clflags.print_types then (* #7656 *)
-    Warnings.parse_options false "-32-34-37-38-60";
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
-  if !Clflags.print_types then begin
-    Typecore.force_delayed_checks ();
-    Printtyp.wrap_printing_env initial_env
-      (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
-    (str, Tcoerce_none, finalenv, simple_sg)   (* result is ignored by Compile.implementation *)
-  end else begin
+  begin
     let sourceintf =
       Filename.remove_extension sourcefile ^ !Config.interface_suffix in
     let mli_status = !Clflags.assume_no_mli in 

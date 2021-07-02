@@ -168,7 +168,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi =
 #if BS_BROWSER
   ()  
 #else  
-  if !Clflags.binary_annotations && not !Clflags.print_types then begin
+  if !Clflags.binary_annotations then begin
     (if !Config.bs_only then Misc.output_to_bin_file_directly else 
     Misc.output_to_file_via_temporary
        ~mode:[Open_binary] ) filename

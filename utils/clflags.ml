@@ -4,7 +4,6 @@
 
 let  output_name = ref (None : string option) (* -o *)
 and include_dirs = ref ([] : string list)(* -I *)
-and print_types = ref false             (* -i *)
 and debug = ref false                   (* -g *)
 and fast = ref false                    (* -unsafe *)
 and classic = ref false                 (* -nolabels *)
@@ -40,12 +39,6 @@ let keep_locs = ref true               (* -keep-locs *)
 
 
 
-
-
-
-
-
-
 let all_passes = ref []
 let dumped_passes_list = ref []
 let dumped_pass s =
@@ -78,7 +71,6 @@ let unboxed_types = ref false
 
 type mli_status =  Mli_exists | Mli_non_exists
 let assume_no_mli = ref Mli_non_exists
-let record_event_when_debug = ref true (* turned off in BuckleScript*)
 let bs_vscode =
     try ignore @@ Sys.getenv "BS_VSCODE" ; true with _ -> false
     (* We get it from environment variable mostly due to
