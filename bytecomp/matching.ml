@@ -1474,8 +1474,6 @@ let matcher_lazy p rem = match p.pat_desc with
    No other call than Obj.tag when the value has been forced before.
 *)
 
-let prim_obj_tag =
-  Primitive.simple ~name:"caml_obj_tag" ~arity:1 ~alloc:false
 
 let get_mod_field modname field =
   lazy (
@@ -1495,9 +1493,6 @@ let get_mod_field modname field =
     with Not_found -> fatal_error ("Module "^modname^" unavailable.")
   )
 
-let code_force_lazy_block =
-  get_mod_field "CamlinternalLazy" "force_lazy_block"
-;;
 
 let code_force =
     get_mod_field "CamlinternalLazy" "force"
@@ -1513,68 +1508,9 @@ let code_force =
    Forward(val_out_of_heap).
 *)
 
-let inline_lazy_force_cond arg loc =
-  let idarg = Ident.create "lzarg" in
-  let varg = Lvar idarg in
-  let tag = Ident.create "tag" in
-  let force_fun = Lazy.force code_force_lazy_block in
-  Llet(Strict, Pgenval, idarg, arg,
-       Llet(Alias, Pgenval, tag, Lprim(Pccall prim_obj_tag, [varg], loc),
-            Lifthenelse(
-              (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
-              Lprim(Pintcomp Ceq,
-                    [Lvar tag; Lconst(Const_base(Const_int Obj.forward_tag))],
-                    loc),
-              Lprim(Pfield (0, Lambda.fld_na (*IRRELEVANT*)), [varg], loc), 
-              Lifthenelse(
-                (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
-                Lprim(Pintcomp Ceq,
-                      [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))],
-                      loc),
-                Lapply{ap_should_be_tailcall=false;
-                       ap_loc=loc;
-                       ap_func=force_fun;
-                       ap_args=[varg];
-                       ap_inlined=Default_inline;
-                       ap_specialised=Default_specialise},
-                (* ... arg *)
-                  varg))))
-
-let inline_lazy_force_switch arg loc =
-  let idarg = Ident.create "lzarg" in
-  let varg = Lvar idarg in
-  let force_fun = Lazy.force code_force_lazy_block in
-  Llet(Strict, Pgenval, idarg, arg,
-       Lifthenelse(
-         Lprim(Pisint, [varg], loc), varg,
-         (Lswitch
-            (varg,
-             { sw_numconsts = 0; sw_consts = [];
-               sw_numblocks = 256;  (* PR#6033 - tag ranges from 0 to 255 *)
-               sw_blocks =
-                 [ (Obj.forward_tag, Lprim(Pfield (0, Lambda.fld_na (*IRRELEVANT*)), [varg], loc));
-                   (Obj.lazy_tag,
-                    Lapply{ap_should_be_tailcall=false;
-                           ap_loc=loc;
-                           ap_func=force_fun;
-                           ap_args=[varg];
-                           ap_inlined=Default_inline;
-                           ap_specialised=Default_specialise}) ];
-               sw_failaction = Some varg;
-               sw_names = None }, loc ))))
 
 let inline_lazy_force arg loc =
-  if !Config.bs_only then
     Lapply {ap_should_be_tailcall=false; ap_func = Lazy.force code_force; ap_inlined = Default_inline; ap_specialised = Default_specialise; ap_args = [arg]; ap_loc = loc}
-  else
-  if !Clflags.native_code then
-    (* Lswitch generates compact and efficient native code *)
-    inline_lazy_force_switch arg loc
-  else
-    (* generating bytecode: Lswitch would generate too many rather big
-       tables (~ 250 elts); conditionals are better *)
-    inline_lazy_force_cond arg loc
-
 let make_lazy_matching def = function
     [] -> fatal_error "Matching.make_lazy_matching"
   | (arg,_mut) :: argl ->

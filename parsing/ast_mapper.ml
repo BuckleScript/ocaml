@@ -702,10 +702,6 @@ module PpxContext = struct
   let make_pair f1 f2 (x1, x2) =
     Exp.tuple [f1 x1; f2 x2]
 
-  let make_option f opt =
-    match opt with
-    | Some x -> Exp.construct (lid "Some") (Some (f x))
-    | None   -> Exp.construct (lid "None") None
 
   let get_cookies () =
     lid "cookies",
@@ -723,10 +719,7 @@ module PpxContext = struct
         lid "include_dirs", make_list make_string !Clflags.include_dirs;
         lid "load_path",    make_list make_string !Config.load_path;
         lid "open_modules", make_list make_string !Clflags.open_modules;
-        lid "for_package",  make_option make_string !Clflags.for_package;
         lid "debug",        make_bool !Clflags.debug;
-        lid "use_threads",  make_bool !Clflags.use_threads;
-        lid "use_vmthreads", make_bool !Clflags.use_vmthreads;
         get_cookies ()
       ]
     in
@@ -770,15 +763,6 @@ module PpxContext = struct
             (f1 e1, f2 e2)
         | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
                              { %s }] pair syntax" name
-      and get_option elem = function
-        | { pexp_desc =
-              Pexp_construct ({ txt = Longident.Lident "Some" }, Some exp) } ->
-            Some (elem exp)
-        | { pexp_desc =
-              Pexp_construct ({ txt = Longident.Lident "None" }, None) } ->
-            None
-        | _ -> raise_errorf "Internal error: invalid [@@@ocaml.ppx.context \
-                             { %s }] option syntax" name
       in
       match name with
       | "tool_name" ->
@@ -789,14 +773,8 @@ module PpxContext = struct
           Config.load_path := get_list get_string payload
       | "open_modules" ->
           Clflags.open_modules := get_list get_string payload
-      | "for_package" ->
-          Clflags.for_package := get_option get_string payload
       | "debug" ->
           Clflags.debug := get_bool payload
-      | "use_threads" ->
-          Clflags.use_threads := get_bool payload
-      | "use_vmthreads" ->
-          Clflags.use_vmthreads := get_bool payload
       | "cookies" ->
           let l = get_list (get_pair get_string (fun x -> x)) payload in
           cookies :=

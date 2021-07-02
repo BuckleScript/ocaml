@@ -23,15 +23,12 @@ let is_inline_attribute = function
 
 let is_inlined_attribute = function
   | {txt=("inlined"|"ocaml.inlined")}, _ -> true
-  | {txt=("unrolled"|"ocaml.unrolled")}, _ when Config.flambda -> true
   | _ -> false
 
 let is_specialise_attribute = function
-  | {txt=("specialise"|"ocaml.specialise")}, _ when Config.flambda -> true
   | _ -> false
 
 let is_specialised_attribute = function
-  | {txt=("specialised"|"ocaml.specialised")}, _ when Config.flambda -> true
   | _ -> false
 
 let find_attribute p attributes =

@@ -27,7 +27,6 @@ type native_repr_kind = Unboxed | Untagged
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
-  | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
@@ -37,7 +36,6 @@ type error =
   | Type_clash of Env.t * (type_expr * type_expr) list
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
-  | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
@@ -56,7 +54,6 @@ type error =
   | Deep_unbox_or_untag_attribute of native_repr_kind
   | Bad_immediate_attribute
   | Bad_unboxed_attribute of string
-  | Wrong_unboxed_type_float
   | Boxed_and_unboxed
   | Nonrec_gadt
 
@@ -294,80 +291,13 @@ let make_constructor env type_path type_params sargs sret_type =
       widen z;
       targs, Some tret_type, args, Some ret_type, params
 
-(* Check that the variable [id] is present in the [univ] list. *)
-let check_type_var loc univ id =
-  let f t = (Btype.repr t).id = id in
-  if not (List.exists f univ) then raise (Error (loc, Wrong_unboxed_type_float))
 
 (* Check that all the variables found in [ty] are in [univ].
    Because [ty] is the argument to an abstract type, the representation
    of that abstract type could be any subexpression of [ty], in particular
    any type variable present in [ty].
 *)
-let rec check_unboxed_abstract_arg loc univ ty =
-  match ty.desc with
-  | Tvar _ -> check_type_var loc univ ty.id
-  | Tarrow (_, t1, t2, _)
-  | Tfield (_, _, t1, t2) ->
-    check_unboxed_abstract_arg loc univ t1;
-    check_unboxed_abstract_arg loc univ t2
-  | Ttuple args
-  | Tconstr (_, args, _)
-  | Tpackage (_, _, args) ->
-    List.iter (check_unboxed_abstract_arg loc univ) args
-  | Tobject (fields, r) ->
-    check_unboxed_abstract_arg loc univ fields;
-    begin match !r with
-    | None -> ()
-    | Some (_, args) -> List.iter (check_unboxed_abstract_arg loc univ) args
-    end
-  | Tnil
-  | Tunivar _ -> ()
-  | Tlink e -> check_unboxed_abstract_arg loc univ e
-  | Tsubst _ -> assert false
-  | Tvariant { row_fields; row_more; row_name } ->
-    List.iter (check_unboxed_abstract_row_field loc univ) row_fields;
-    check_unboxed_abstract_arg loc univ row_more;
-    begin match row_name with
-    | None -> ()
-    | Some (_, args) -> List.iter (check_unboxed_abstract_arg loc univ) args
-    end
-  | Tpoly (t, _) -> check_unboxed_abstract_arg loc univ t
 
-and check_unboxed_abstract_row_field loc univ (_, field) =
-  match field with
-  | Rpresent (Some ty) -> check_unboxed_abstract_arg loc univ ty
-  | Reither (_, args, _, r) ->
-    List.iter (check_unboxed_abstract_arg loc univ) args;
-    begin match !r with
-    | None -> ()
-    | Some f -> check_unboxed_abstract_row_field loc univ ("", f)
-    end
-  | Rabsent
-  | Rpresent None -> ()
-
-(* Check that the argument to a GADT constructor is compatible with unboxing
-   the type, given the universal parameters of the type. *)
-let rec check_unboxed_gadt_arg loc univ env ty =
-  match get_unboxed_type_representation env ty with
-  | Some {desc = Tvar _; id} -> check_type_var loc univ id
-  | Some {desc = Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil
-                 | Tvariant _; _} ->
-    ()
-    (* A comment in [Translcore.transl_exp0] claims the above cannot be
-       represented by floats. *)
-  | Some {desc = Tconstr (p, args, _); _} ->
-    let tydecl = Env.find_type p env in
-    assert (not tydecl.type_unboxed.unboxed);
-    if tydecl.type_kind = Type_abstract then
-      List.iter (check_unboxed_abstract_arg loc univ) args
-  | Some {desc = Tfield _ | Tlink _ | Tsubst _; _} -> assert false
-  | Some {desc = Tunivar _; _} -> ()
-  | Some {desc = Tpoly (t2, _); _} -> check_unboxed_gadt_arg loc univ env t2
-  | None -> ()
-      (* This case is tricky: the argument is another (or the same) type
-         in the same recursive definition. In this case we don't have to
-         check because we will also check that other type for correctness. *)
 
 let transl_declaration env sdecl id =
   (* Bind type parameters *)
@@ -444,34 +374,12 @@ let transl_declaration env sdecl id =
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
             all_constrs := StringSet.add name !all_constrs)
           scstrs;
-        if not !Config.bs_only && List.length
-            (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
-           > (Config.max_tag + 1) then
-          raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr scstr =
           let name = Ident.create scstr.pcd_name.txt in
-          let targs, tret_type, args, ret_type, cstr_params =
+          let targs, tret_type, args, ret_type, _cstr_params =
             make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
           in
-          if (not !Config.bs_only && Config.flat_float_array) && unbox then begin
-            (* Cannot unbox a type when the argument can be both float and
-               non-float because it interferes with the dynamic float array
-               optimization. This can only happen when the type is a GADT
-               and the argument is an existential type variable or an
-               unboxed (or abstract) type constructor applied to some
-               existential type variable. Of course we also have to rule
-               out any abstract type constructor applied to anything that
-               might be an existential type variable.
-               There is a difficulty with existential variables created
-               out of thin air (rather than bound by the declaration).
-               See PR#7511 and GPR#1133 for details. *)
-            match Datarepr.constructor_existentials args ret_type with
-            | _, [] -> ()
-            | [argty], _ex ->
-                check_unboxed_gadt_arg sdecl.ptype_loc cstr_params env argty
-            | _ -> assert false
-          end;
           let tcstr =
             { cd_id = name;
               cd_name = scstr.pcd_name;
@@ -732,10 +640,10 @@ let check_well_founded env loc path to_check ty =
     if fini then () else
     let rec_ok =
       match ty.desc with
-        Tconstr(p,_,_) ->
-          !Clflags.recursive_types && Ctype.is_contractive env p
+        Tconstr(_p,_,_) ->
+          false (*!Clflags.recursive_types && Ctype.is_contractive env p*)
       | Tobject _ | Tvariant _ -> true
-      | _ -> !Clflags.recursive_types
+      | _ -> false (* !Clflags.recursive_types*)
     in
     let visited' = TypeMap.add ty parents !visited in
     let arg_exn =
@@ -1794,10 +1702,6 @@ let transl_value_decl env loc valdecl =
              ) && 
          (prim.prim_name = "" || (prim.prim_name.[0] <> '%' && prim.prim_name.[0] <> '#')) then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
-      if !Clflags.native_code
-      && prim.prim_arity > 5
-      && prim_native_name = ""
-      then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
       Btype.iter_type_expr (check_unboxable env loc) ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
@@ -2002,10 +1906,6 @@ let report_error ppf = function
       fprintf ppf "A type parameter occurs several times"
   | Duplicate_constructor s ->
       fprintf ppf "Two constructors are named %s" s
-  | Too_many_constructors ->
-      fprintf ppf
-        "@[Too many non-constant constructors@ -- maximum is %i %s@]"
-        (Config.max_tag + 1) "non-constant constructors"
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
@@ -2046,10 +1946,6 @@ let report_error ppf = function
            fprintf ppf "but is used here with type")
   | Null_arity_external ->
       fprintf ppf "External identifiers must be functions"
-  | Missing_native_external ->
-      fprintf ppf "@[<hv>An external function with more than 5 arguments \
-                   requires a second stub function@ \
-                   for native-code compilation@]"
   | Unbound_type_var (ty, decl) ->
       fprintf ppf "A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
@@ -2175,10 +2071,6 @@ let report_error ppf = function
         "non-pointer types like int or bool"
   | Bad_unboxed_attribute msg ->
       fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
-  | Wrong_unboxed_type_float ->
-      fprintf ppf "@[This type cannot be unboxed because@ \
-                   it might contain both float and non-float values.@ \
-                   You should annotate it with [%@%@ocaml.boxed].@]"
   | Boxed_and_unboxed ->
       fprintf ppf "@[A type cannot be boxed and unboxed at the same time.@]"
   | Nonrec_gadt ->

@@ -150,8 +150,8 @@ let array_type_kind env ty =
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
       begin match classify env elt_ty with
-      | Any -> if not !Config.bs_only && Config.flat_float_array   then Pgenarray else Paddrarray
-      | Float -> if not !Config.bs_only && Config.flat_float_array  then Pfloatarray else Paddrarray
+      | Any -> (*if not !Config.bs_only && Config.flat_float_array   then Pgenarray else*) Paddrarray
+      | Float -> (*if not !Config.bs_only && Config.flat_float_array  then Pfloatarray else*) Paddrarray
       | Addr | Lazy -> Paddrarray
       | Int -> Pintarray
       end
@@ -190,7 +190,7 @@ let value_kind env ty =
 let lazy_val_requires_forward env ty =
   match classify env ty with
   | Any | Lazy -> true
-  | Float -> Config.flat_float_array
+  | Float (*-> Config.flat_float_array*)
   | Addr | Int -> false
 
 (** The compilation of the expression [lazy e] depends on the form of e:

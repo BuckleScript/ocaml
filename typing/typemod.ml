@@ -1769,7 +1769,7 @@ let type_implementation_more ?check_exists sourcefile outputprefix modulename in
     let sourceintf =
       Filename.remove_extension sourcefile ^ !Config.interface_suffix in
     let mli_status = !Clflags.assume_no_mli in 
-    if (mli_status = Clflags.Mli_na && Sys.file_exists sourceintf) || (mli_status = Clflags.Mli_exists) then begin
+    if mli_status = Clflags.Mli_exists then begin
       let intf_file =
         try
           find_in_path_uncap !Config.load_path (modulename ^ ".cmi")

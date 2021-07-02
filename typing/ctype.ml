@@ -1635,7 +1635,7 @@ let type_changed = ref false (* trace possible changes to the studied type *)
 let merge r b = if b then r := true
 
 let occur env ty0 ty =
-  let allow_recursive = !Clflags.recursive_types || !umode = Pattern  in
+  let allow_recursive = (*!Clflags.recursive_types ||*) !umode = Pattern  in
   let old = !type_changed in
   try
     while

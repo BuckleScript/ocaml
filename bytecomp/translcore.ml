@@ -48,7 +48,7 @@ let prim_fresh_oo_id =
 
 let transl_extension_constructor env path ext =
   let name =
-    match path, !Clflags.for_package with
+    match path, None (*!Clflags.for_package*) with
       None, _ -> Ident.name ext.ext_id
     | Some p, None -> Path.name p
     | Some p, Some pack -> Printf.sprintf "%s.%s" pack (Path.name p)
@@ -269,11 +269,8 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
         simplify_constant_constructor = false}
 ]
 
-let gen_array_kind =
-  if Config.flat_float_array then Pgenarray else Paddrarray
-
-let primitives_table = lazy ( if !Config.bs_only then 
-create_hashtable 57 [
+let primitives_table = 
+  create_hashtable 57 [
   "%identity", Pidentity;
   "%bytes_to_string", Pbytes_to_string;
   "%bytes_of_string", Pbytes_of_string;
@@ -415,151 +412,10 @@ create_hashtable 57 [
   "%int64_to_nativeint", Pcvtbint(Pint64, Pnativeint);
   "%opaque", Popaque;
 ]
-else create_hashtable 57 [
-  "%identity", Pidentity;
-  "%bytes_to_string", Pbytes_to_string;
-  "%bytes_of_string", Pbytes_of_string;
-  "%ignore", Pignore;
-  "%revapply", Prevapply;
-  "%apply", Pdirapply;
-  "%loc_LOC", Ploc Loc_LOC;
-  "%loc_FILE", Ploc Loc_FILE;
-  "%loc_LINE", Ploc Loc_LINE;
-  "%loc_POS", Ploc Loc_POS;
-  "%loc_MODULE", Ploc Loc_MODULE;
-  "%field0", Pfield (0, Lambda.fld_na (*IRRELEVANT*));  
-  "%field1", Pfield (1, Lambda.fld_na (*IRRELEVANT*));
-  "%setfield0", Psetfield(0, Pointer, Assignment, Fld_set_na);
-  "%makeblock", Pmakeblock(0, Lambda.default_tag_info (*IRRELEVANT*), Immutable, None);
-  "%makemutable", Pmakeblock(0, Lambda.ref_tag_info, Mutable, None);
-  "%raise", Praise Raise_regular;
-  "%reraise", Praise Raise_reraise;
-  "%raise_notrace", Praise Raise_notrace;
-  "%sequand", Psequand;
-  "%sequor", Psequor;
-  "%boolnot", Pnot;
-  "%big_endian", Pctconst Big_endian;
-  "%backend_type", Pctconst Backend_type;
-  "%word_size", Pctconst Word_size;
-  "%int_size", Pctconst Int_size;
-  "%max_wosize", Pctconst Max_wosize;
-  "%ostype_unix", Pctconst Ostype_unix;
-  "%ostype_win32", Pctconst Ostype_win32;
-  "%ostype_cygwin", Pctconst Ostype_cygwin;
-  "%negint", Pnegint;
-  "%succint", Poffsetint 1;
-  "%predint", Poffsetint(-1);
-  "%addint", Paddint;
-  "%subint", Psubint;
-  "%mulint", Pmulint;
-  "%divint", Pdivint Safe;
-  "%modint", Pmodint Safe;
-  "%andint", Pandint;
-  "%orint", Porint;
-  "%xorint", Pxorint;
-  "%lslint", Plslint;
-  "%lsrint", Plsrint;
-  "%asrint", Pasrint;
-  "%eq", Pintcomp Ceq;
-  "%noteq", Pintcomp Cneq;
-  "%ltint", Pintcomp Clt;
-  "%leint", Pintcomp Cle;
-  "%gtint", Pintcomp Cgt;
-  "%geint", Pintcomp Cge;
-  "%incr", Poffsetref(1);
-  "%decr", Poffsetref(-1);
-  "%intoffloat", Pintoffloat;
-  "%floatofint", Pfloatofint;
-  "%negfloat", Pnegfloat;
-  "%absfloat", Pabsfloat;
-  "%addfloat", Paddfloat;
-  "%subfloat", Psubfloat;
-  "%mulfloat", Pmulfloat;
-  "%divfloat", Pdivfloat;
-  "%eqfloat", Pfloatcomp Ceq;
-  "%noteqfloat", Pfloatcomp Cneq;
-  "%ltfloat", Pfloatcomp Clt;
-  "%lefloat", Pfloatcomp Cle;
-  "%gtfloat", Pfloatcomp Cgt;
-  "%gefloat", Pfloatcomp Cge;
-  "%string_length", Pstringlength;
-  "%string_safe_get", Pstringrefs;
-  "%string_safe_set", Pbytessets;
-  "%string_unsafe_get", Pstringrefu;
-  "%string_unsafe_set", Pbytessetu;
-  "%bytes_length", Pbyteslength;
-  "%bytes_safe_get", Pbytesrefs;
-  "%bytes_safe_set", Pbytessets;
-  "%bytes_unsafe_get", Pbytesrefu;
-  "%bytes_unsafe_set", Pbytessetu;
-  "%array_length", Parraylength gen_array_kind;
-  "%array_safe_get", Parrayrefs gen_array_kind;
-  "%array_safe_set", Parraysets gen_array_kind;
-  "%array_unsafe_get", Parrayrefu gen_array_kind;
-  "%array_unsafe_set", Parraysetu gen_array_kind;
-  "%obj_size", Parraylength gen_array_kind;
-  "%obj_field", Parrayrefu gen_array_kind;
-  "%obj_set_field", Parraysetu gen_array_kind;
-  "%floatarray_length", Parraylength Pfloatarray;
-  "%floatarray_safe_get", Parrayrefs Pfloatarray;
-  "%floatarray_safe_set", Parraysets Pfloatarray;
-  "%floatarray_unsafe_get", Parrayrefu Pfloatarray;
-  "%floatarray_unsafe_set", Parraysetu Pfloatarray;
-  "%obj_is_int", Pisint;
-  "%lazy_force", Plazyforce;
-  "%nativeint_of_int", Pbintofint Pnativeint;
-  "%nativeint_to_int", Pintofbint Pnativeint;
-  "%nativeint_neg", Pnegbint Pnativeint;
-  "%nativeint_add", Paddbint Pnativeint;
-  "%nativeint_sub", Psubbint Pnativeint;
-  "%nativeint_mul", Pmulbint Pnativeint;
-  "%nativeint_div", Pdivbint { size = Pnativeint; is_safe = Safe };
-  "%nativeint_mod", Pmodbint { size = Pnativeint; is_safe = Safe };
-  "%nativeint_and", Pandbint Pnativeint;
-  "%nativeint_or",  Porbint Pnativeint;
-  "%nativeint_xor", Pxorbint Pnativeint;
-  "%nativeint_lsl", Plslbint Pnativeint;
-  "%nativeint_lsr", Plsrbint Pnativeint;
-  "%nativeint_asr", Pasrbint Pnativeint;
-  "%int32_of_int", Pbintofint Pint32;
-  "%int32_to_int", Pintofbint Pint32;
-  "%int32_neg", Pnegbint Pint32;
-  "%int32_add", Paddbint Pint32;
-  "%int32_sub", Psubbint Pint32;
-  "%int32_mul", Pmulbint Pint32;
-  "%int32_div", Pdivbint { size = Pint32; is_safe = Safe };
-  "%int32_mod", Pmodbint { size = Pint32; is_safe = Safe };
-  "%int32_and", Pandbint Pint32;
-  "%int32_or",  Porbint Pint32;
-  "%int32_xor", Pxorbint Pint32;
-  "%int32_lsl", Plslbint Pint32;
-  "%int32_lsr", Plsrbint Pint32;
-  "%int32_asr", Pasrbint Pint32;
-  "%int64_of_int", Pbintofint Pint64;
-  "%int64_to_int", Pintofbint Pint64;
-  "%int64_neg", Pnegbint Pint64;
-  "%int64_add", Paddbint Pint64;
-  "%int64_sub", Psubbint Pint64;
-  "%int64_mul", Pmulbint Pint64;
-  "%int64_div", Pdivbint { size = Pint64; is_safe = Safe };
-  "%int64_mod", Pmodbint { size = Pint64; is_safe = Safe };
-  "%int64_and", Pandbint Pint64;
-  "%int64_or",  Porbint Pint64;
-  "%int64_xor", Pxorbint Pint64;
-  "%int64_lsl", Plslbint Pint64;
-  "%int64_lsr", Plsrbint Pint64;
-  "%int64_asr", Pasrbint Pint64;
-  "%nativeint_of_int32", Pcvtbint(Pint32, Pnativeint);
-  "%nativeint_to_int32", Pcvtbint(Pnativeint, Pint32);
-  "%int64_of_int32", Pcvtbint(Pint32, Pint64);
-  "%int64_to_int32", Pcvtbint(Pint64, Pint32);
-  "%int64_of_nativeint", Pcvtbint(Pnativeint, Pint64);
-  "%int64_to_nativeint", Pcvtbint(Pint64, Pnativeint);
-  "%opaque", Popaque;
-])
+
 
 let find_primitive prim_name =
-  Hashtbl.find (Lazy.force primitives_table) prim_name
+  Hashtbl.find primitives_table prim_name
 
 let prim_restore_raw_backtrace =
   Primitive.simple ~name:"caml_restore_raw_backtrace" ~arity:2 ~alloc:false
@@ -899,7 +755,7 @@ and transl_exp0 e =
         event_function e
           (function repr ->
             let pl = push_defaults e.exp_loc [] cases partial in
-            transl_function e.exp_loc !Clflags.native_code repr partial
+            transl_function e.exp_loc false(*!Clflags.native_code*) repr partial
               param pl)
       in
       let attr = {
@@ -939,7 +795,7 @@ and transl_exp0 e =
          List.map (function _, Some x -> x | _ -> assert false) args in
       let argl = transl_list args in
       let public_send = p.prim_name = "%send"
-        || not !Clflags.native_code && p.prim_name = "%sendcache"in
+        || not false (*!Clflags.native_code*) && p.prim_name = "%sendcache"in
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public None else Self in
         let obj = List.hd argl in
@@ -1446,7 +1302,7 @@ and transl_record loc env fields repres opt_init_expr =
   (* Determine if there are "enough" fields (only relevant if this is a
      functional-style record update *)
   let no_init = match opt_init_expr with None -> true | _ -> false in
-  if no_init || size < (if !Config.bs_only then 20 else Config.max_young_wosize) 
+  if no_init || size < 20 (*if !Config.bs_only then 20 else Config.max_young_wosize*) 
   (* TODO: More strategies
      3 + 2 * List.length lbl_expr_list >= size (density)
   *)

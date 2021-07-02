@@ -4177,7 +4177,7 @@ and type_statement env sexp =
   let ty = expand_head env exp.exp_type and tv = newvar() in
   if is_Tvar ty && ty.level > tv.level then
       Location.prerr_warning loc Warnings.Nonreturning_statement;
-  if !Clflags.strict_sequence then
+  if true (*!Clflags.strict_sequence *)then
     let expected_ty = instance_def Predef.type_unit in
     unify_exp env exp expected_ty;
     exp

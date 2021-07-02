@@ -739,10 +739,8 @@ let acknowledge_pers_struct check modname
   List.iter
     (function
         | Rectypes ->
-            if not !Clflags.recursive_types then
               error (Need_recursive_types(ps.ps_name, !current_unit))
         | Unsafe_string ->
-            if Config.safe_string then
               error (Depend_on_unsafe_string_unit (ps.ps_name, !current_unit));
         | Deprecated _ -> ()
         | Opaque -> add_imported_opaque modname)
@@ -2166,12 +2164,7 @@ let save_signature_with_imports ?check_exists ~deprecated sg modname filename im
   Subst.reset_for_saving ();
   let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
   let flags =
-    List.concat [
-      if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
-      if !Clflags.opaque then [Cmi_format.Opaque] else [];
-      (if !Clflags.unsafe_string then [Cmi_format.Unsafe_string] else []);
-      (match deprecated with Some s -> [Deprecated s] | None -> []);
-    ]
+      (match deprecated with Some s -> [Deprecated s] | None -> [])
   in
   try
     let cmi = {
