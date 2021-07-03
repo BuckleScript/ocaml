@@ -311,10 +311,13 @@ let parse_options errflag s =
   parse_opt error active (if errflag then error else active) s;
   current := {error; active}
 
-(* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60-102-109";;
-let defaults_warn_error = "-a+31";;
 
+
+let reset () = 
+  parse_options false Bsc_warnings.defaults_w;
+  parse_options true Bsc_warnings.defaults_warn_error;;
+
+let () = reset ()
 
 let message = function
   | Comment_start -> "this is the start of a comment."

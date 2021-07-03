@@ -97,8 +97,6 @@ val without_warnings : (unit -> 'a) -> 'a
 val is_active : t -> bool;;
 val is_error : t -> bool;;
 
-val defaults_w : string;;
-val defaults_warn_error : string;;
 
 type reporting_information =
   { number : int
@@ -129,3 +127,4 @@ val nerrors : int ref
 val message : t -> string 
 val number: t -> int
 
+val reset : unit -> unit
